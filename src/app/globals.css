@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f5f9;
+  --background: #ffffff;
   --foreground: #0f172a;
   --primary: #0d9488;
   --primary-dark: #0f766e;
@@ -36,10 +36,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   /* Blueprint grid */
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
 }
 
 /* ─── Marker highlight effect ─── */
