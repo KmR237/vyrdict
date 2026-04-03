@@ -74,7 +74,7 @@ const jsonLd = [
       {
         "@type": "Question",
         name: "Les estimations de coût sont-elles fiables ?",
-        acceptedAnswer: { "@type": "Answer", text: "Les prix sont basés sur les tarifs moyens en garage indépendant en France (Vroomly, iDGarages, AUTODOC). Indicatifs, nous recommandons 2-3 devis." },
+        acceptedAnswer: { "@type": "Answer", text: "Les prix sont basés sur les tarifs moyens en garage indépendant en France . Indicatifs, nous recommandons 2-3 devis." },
       },
       {
         "@type": "Question",

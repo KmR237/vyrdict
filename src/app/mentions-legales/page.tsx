@@ -44,7 +44,7 @@ export default function MentionsLegales() {
               Vyrdict fournit des estimations indicatives des coûts de réparation basées sur une analyse automatisée par intelligence artificielle. Ces estimations ne constituent en aucun cas un devis, un diagnostic professionnel ou un engagement contractuel.
             </p>
             <p className="mt-2">
-              Les tarifs affichés sont des moyennes constatées auprès de garages indépendants en France (sources : Vroomly, iDGarages, AUTODOC, Oscaro). Les coûts réels peuvent varier selon le véhicule, la région et le garage choisi.
+              Les tarifs affichés sont des moyennes constatées auprès de garages indépendants en France. Les coûts réels peuvent varier selon le véhicule, la région et le garage choisi.
             </p>
           </section>
 

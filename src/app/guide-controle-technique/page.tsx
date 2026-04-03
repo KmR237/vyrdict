@@ -106,7 +106,7 @@ export default function GuideControleTechnique() {
                 Le prix du contrôle technique varie selon la région et le centre, mais se situe en moyenne entre <strong>60€ et 90€</strong> en France. La contre-visite coûte généralement entre <strong>15€ et 30€</strong> (seuls les points défaillants sont revérifiés).
               </p>
               <p className="mt-3">
-                Les tarifs sont libres et non réglementés. Il est recommandé de comparer les prix entre plusieurs centres de votre zone. Des sites comme iDGarages ou Vroomly proposent des comparateurs par code postal.
+                Les tarifs sont libres et non réglementés. Il est recommandé de comparer les prix entre plusieurs centres de votre zone. Des comparateurs en ligne proposent de trouver les meilleurs tarifs par code postal.
               </p>
             </section>
 
@@ -171,7 +171,7 @@ export default function GuideControleTechnique() {
                 </table>
               </div>
               <p className="mt-3 text-sm text-muted">
-                Sources : Vroomly, iDGarages, AUTODOC — Tarifs moyens garage indépendant France 2025-2026.
+                Tarifs moyens constatés en garage indépendant — France 2025-2026.
               </p>
             </section>
           </div>

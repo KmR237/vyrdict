@@ -419,7 +419,7 @@ export default function Home() {
                   },
                   {
                     q: "Les estimations de coût sont-elles fiables ?",
-                    a: "Les fourchettes de prix sont basées sur les tarifs moyens constatés en garage indépendant en France (sources : Vroomly, iDGarages, AUTODOC). Elles sont indicatives et peuvent varier selon votre véhicule, votre région et le garage choisi. Nous recommandons de demander 2-3 devis avant toute intervention."
+                    a: "Les fourchettes de prix sont basées sur les tarifs moyens constatés en garage indépendant en France (sources professionnelles du secteur automobile). Elles sont indicatives et peuvent varier selon votre véhicule, votre région et le garage choisi. Nous recommandons de demander 2-3 devis avant toute intervention."
                   },
                   {
                     q: "Que faire si mon contrôle technique est défavorable ?",
@@ -611,7 +611,7 @@ export default function Home() {
             </div>
 
             <p className="text-[11px] text-slate-400 text-center py-2 leading-relaxed">
-              Estimations indicatives basées sur les tarifs moyens en France 2025-2026 (sources : Vroomly, iDGarages, AUTODOC). Demandez des devis professionnels avant toute intervention.
+              Estimations indicatives basées sur les tarifs moyens en France 2025-2026 (sources professionnelles du secteur automobile). Demandez des devis professionnels avant toute intervention.
             </p>
 
             <div className="flex justify-center gap-3 pb-8 no-print">

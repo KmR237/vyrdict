@@ -135,7 +135,7 @@ export default function ContreVisite() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-muted">Sources : Vroomly, iDGarages, AUTODOC — Tarifs moyens 2025-2026.</p>
+              <p className="mt-3 text-xs text-muted">Tarifs moyens constatés en garage indépendant — France 2025-2026.</p>
             </section>
 
             <section>
