@@ -630,6 +630,8 @@ export default function Home() {
           <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
           <div className="flex items-center gap-4 text-xs">
             <span>Outil informatif, ne remplace pas un diagnostic professionnel.</span>
+            <Link href="/guide-controle-technique" className="text-primary hover:underline font-medium">Guide CT</Link>
+            <Link href="/contre-visite" className="text-primary hover:underline font-medium">Contre-visite</Link>
             <Link href="/mentions-legales" className="text-primary hover:underline font-medium">Mentions légales</Link>
           </div>
         </div>
