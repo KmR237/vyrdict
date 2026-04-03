@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function ContreVisite() {
   return (
     <div className="min-h-full flex flex-col">
-      <header className="border-b border-card-border bg-card/80 backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center shadow-md shadow-teal-500/20">
@@ -64,7 +64,7 @@ export default function ContreVisite() {
                   Si vous dépassez le délai de 2 mois, vous devrez repasser un <strong>contrôle technique complet</strong> (et payer le tarif plein de 60-90€ au lieu des 15-30€ de la contre-visite).
                 </p>
               </div>
-              <div className="mt-4 p-4 bg-card rounded-xl border border-card-border">
+              <div className="mt-4 p-4 bg-white rounded-xl border border-slate-200/50">
                 <p className="text-sm font-semibold text-foreground">Cas particulier : défaillance critique</p>
                 <p className="text-sm text-muted mt-1">
                   En cas de défaillance critique, votre véhicule ne peut plus circuler <strong>à partir du lendemain</strong> du contrôle. Vous devez le faire remorquer vers un garage pour réparation. Le délai de 2 mois s&apos;applique tout de même.
@@ -78,11 +78,11 @@ export default function ContreVisite() {
                 La contre-visite est beaucoup moins chère que le contrôle initial :
               </p>
               <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="p-4 bg-card rounded-xl border border-card-border text-center">
+                <div className="p-4 bg-white rounded-xl border border-slate-200/50 text-center">
                   <p className="text-2xl font-black text-foreground">15 - 30 €</p>
                   <p className="text-xs text-muted mt-1">Contre-visite</p>
                 </div>
-                <div className="p-4 bg-card rounded-xl border border-card-border text-center">
+                <div className="p-4 bg-white rounded-xl border border-slate-200/50 text-center">
                   <p className="text-2xl font-black text-foreground">60 - 90 €</p>
                   <p className="text-xs text-muted mt-1">CT complet (si délai dépassé)</p>
                 </div>
@@ -98,15 +98,15 @@ export default function ContreVisite() {
                 Si votre CT comporte plusieurs défaillances, concentrez-vous d&apos;abord sur celles qui <strong>bloquent la contre-visite</strong> :
               </p>
               <div className="mt-4 flex flex-col gap-3">
-                <div className="p-4 rounded-xl border-l-4 border-l-red-400 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-red-400 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Priorité 1 : Défaillances critiques</p>
                   <p className="text-sm text-muted mt-1">À réparer immédiatement. Le véhicule ne peut pas circuler.</p>
                 </div>
-                <div className="p-4 rounded-xl border-l-4 border-l-amber-400 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-amber-400 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Priorité 2 : Défaillances majeures</p>
                   <p className="text-sm text-muted mt-1">Obligatoires pour passer la contre-visite. Ce sont les réparations qui comptent.</p>
                 </div>
-                <div className="p-4 rounded-xl border-l-4 border-l-stone-300 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-stone-300 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Priorité 3 : Défaillances mineures</p>
                   <p className="text-sm text-muted mt-1">Notées mais <strong>ne bloquent pas</strong> la contre-visite. Vous pouvez les reporter.</p>
                 </div>
@@ -126,7 +126,7 @@ export default function ContreVisite() {
                   { label: "Amortisseur défectueux", cost: "200 - 400 €", freq: "Courant" },
                   { label: "Corrosion du soubassement", cost: "150 - 800 €", freq: "Variable" },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between py-2.5 px-4 bg-card rounded-xl border border-card-border">
+                  <div key={item.label} className="flex items-center justify-between py-2.5 px-4 bg-white rounded-xl border border-slate-200/50">
                     <div>
                       <span className="font-semibold text-sm text-foreground">{item.label}</span>
                       <span className="ml-2 text-[10px] px-2 py-0.5 bg-slate-100 text-muted rounded-full">{item.freq}</span>
@@ -198,7 +198,7 @@ export default function ContreVisite() {
         </article>
       </main>
 
-      <footer className="border-t border-card-border py-8 mt-auto bg-card/50">
+      <footer className="border-t border-slate-200/50 py-8 mt-auto bg-white/50">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
           <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
           <div className="flex items-center gap-4 text-xs">

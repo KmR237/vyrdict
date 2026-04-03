@@ -216,7 +216,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-full">
       {/* HEADER */}
-      <header className="border-b border-card-border bg-card/80 backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           {/* Logo + descripteur */}
           <button onClick={reset} className="flex items-center gap-2.5 cursor-pointer group">
@@ -244,13 +244,13 @@ export default function Home() {
             )}
             {state === "results" && !isDemo && (
               <>
-                <button onClick={() => window.print()} className="p-2 rounded-lg border border-card-border hover:bg-card-hover transition-colors cursor-pointer no-print" aria-label="Imprimer le rapport">
+                <button onClick={() => window.print()} className="p-2 rounded-lg border border-slate-200/50 hover:bg-slate-50 transition-colors cursor-pointer no-print" aria-label="Imprimer le rapport">
                   <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
                 </button>
                 <button onClick={shareWhatsApp} className="hidden sm:flex text-sm px-3 py-1.5 rounded-lg bg-[#25D366] text-white hover:bg-[#1da851] transition-colors cursor-pointer shadow-sm">WhatsApp</button>
-                <button onClick={copyLink} className="hidden sm:flex text-sm px-3 py-1.5 rounded-lg border border-card-border hover:bg-card-hover transition-colors cursor-pointer">
+                <button onClick={copyLink} className="hidden sm:flex text-sm px-3 py-1.5 rounded-lg border border-slate-200/50 hover:bg-slate-50 transition-colors cursor-pointer">
                   {copied ? "Copié !" : "Copier le lien"}
                 </button>
               </>
@@ -312,7 +312,7 @@ export default function Home() {
                 className={`w-full rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all duration-300 animate-fade-up-delay-2 ${
                   state === "dragging"
                     ? "border-2 border-primary bg-teal-50 scale-[1.02] shadow-xl shadow-teal-500/15 ring-4 ring-teal-100"
-                    : "border-2 border-dashed border-slate-300 bg-card hover:border-primary/40 hover:shadow-lg shadow-md"
+                    : "border-2 border-dashed border-slate-300 bg-white hover:border-primary/40 hover:shadow-lg shadow-md"
                 }`}>
                 <div className="flex flex-col items-center gap-4">
                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${state === "dragging" ? "bg-teal-100 scale-110" : "bg-slate-50"}`}>
@@ -358,7 +358,7 @@ export default function Home() {
               <h2 className="text-center font-bold text-xl mb-6 text-slate-700">Exemple d&apos;analyse</h2>
               <div className="relative">
                 <div className="flex flex-col gap-4">
-                  <div className="bg-card rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="font-bold text-lg">{DEMO_RESULT.vehicule.marque} {DEMO_RESULT.vehicule.modele}</span>
@@ -387,7 +387,7 @@ export default function Home() {
                     </div>
                   </div>
                   {DEMO_RESULT.defaillances.slice(0, 2).map((d, idx) => (
-                    <div key={idx} className={`bg-card rounded-2xl border border-slate-200/60 shadow-sm border-l-4 ${d.gravite === "majeur" ? "border-l-amber-400" : "border-l-stone-300"}`}>
+                    <div key={idx} className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm border-l-4 ${d.gravite === "majeur" ? "border-l-amber-400" : "border-l-stone-300"}`}>
                       <div className="px-4 py-3 flex items-center gap-3">
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${d.gravite === "majeur" ? "bg-amber-100 text-amber-700" : "bg-teal-50 text-teal-600"}`}>{d.gravite}</span>
                         <span className="flex-1 font-semibold text-sm">{d.libelle}</span>
@@ -431,7 +431,7 @@ export default function Home() {
                     a: "Vyrdict accepte les photos (JPG, PNG, WEBP) et les fichiers PDF de votre procès-verbal de contrôle technique. La taille maximale est de 10 Mo. Sur mobile, vous pouvez directement prendre votre CT en photo."
                   },
                 ].map((faq, idx) => (
-                  <details key={idx} className="bg-card rounded-2xl border border-slate-200/60 shadow-sm group">
+                  <details key={idx} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm group">
                     <summary className="px-5 py-4 font-semibold text-sm cursor-pointer list-none flex items-center justify-between hover:bg-slate-50/50 transition-colors rounded-2xl">
                       <span>{faq.q}</span>
                       <svg className="w-4 h-4 text-slate-400 shrink-0 ml-2 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -520,7 +520,7 @@ export default function Home() {
             )}
 
             {/* Vehicle */}
-            <div className="bg-card rounded-2xl border border-slate-200/60 p-5 shadow-sm animate-fade-up">
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm animate-fade-up">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 <span className="font-bold text-foreground text-xl">{displayResult.vehicule.marque} {displayResult.vehicule.modele}</span>
                 {displayResult.vehicule.immatriculation && (
@@ -537,18 +537,18 @@ export default function Home() {
 
             {/* Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 animate-fade-up-delay-1">
-              <div className="bg-card rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center shadow-sm">
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Score santé</span>
                 <div className="mt-3"><ScoreGauge score={displayResult.score_sante} /></div>
               </div>
-              <div className="bg-card rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Coût estimé</span>
                 <span className="text-2xl font-extrabold mt-3 bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
                   {displayResult.cout_total_min.toLocaleString("fr-FR")} - {displayResult.cout_total_max.toLocaleString("fr-FR")} &euro;
                 </span>
                 <span className="text-xs text-slate-500 mt-1.5 font-medium">{displayResult.defaillances.length} défaillance{displayResult.defaillances.length > 1 ? "s" : ""}</span>
               </div>
-              <div className="col-span-2 sm:col-span-1 bg-card rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
+              <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Votre cote Argus</span>
                 <div className="flex items-center gap-1 mt-3">
                   <input type="number" inputMode="numeric" name="cote_argus" placeholder="4 500…" value={coteArgus} onChange={(e) => setCoteArgus(e.target.value)} autoComplete="off" spellCheck={false} aria-label="Cote Argus en euros"
@@ -600,7 +600,7 @@ export default function Home() {
             {!isDemo && <EmailCapture result={displayResult} shareUrl={getShareUrl()} />}
 
             {/* Conseils */}
-            <div className="bg-card rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
               <h2 className="font-bold text-lg mb-4">Conseils personnalisés</h2>
               <ul className="flex flex-col gap-3">
                 {displayResult.conseils.map((c, idx) => (
@@ -629,7 +629,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200/40 py-8 mt-auto bg-card/50">
+      <footer className="border-t border-slate-200/40 py-8 mt-auto bg-white/50">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
           <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
           <div className="flex items-center gap-4 text-xs">

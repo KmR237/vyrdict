@@ -25,7 +25,7 @@ export function BudgetSimulator({ result, budget, onBudgetChange }: {
   }, [result.defaillances, budget]);
 
   return (
-    <div className="bg-card rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
       <h2 className="font-bold text-lg mb-5">Simulateur de budget</h2>
       <div className="flex items-center gap-4 mb-5">
         <input

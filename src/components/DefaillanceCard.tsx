@@ -9,7 +9,7 @@ const BORDER_COLORS = {
 
 export function DefaillanceCard({ defaillance: d, expanded, onToggle }: { defaillance: Defaillance; expanded: boolean; onToggle: () => void }) {
   return (
-    <div className={`bg-card rounded-2xl border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow border-l-4 ${BORDER_COLORS[d.gravite]}`}>
+    <div className={`bg-white rounded-2xl border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow border-l-4 ${BORDER_COLORS[d.gravite]}`}>
       <button onClick={onToggle} aria-expanded={expanded} className="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-slate-50/50 transition cursor-pointer">
         <GraviteBadge gravite={d.gravite} />
         <span className="flex-1 font-semibold text-sm">{d.libelle}</span>

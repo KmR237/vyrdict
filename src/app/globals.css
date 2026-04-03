@@ -11,12 +11,8 @@
   --success: #16a34a;
   --warning: #f59e0b;
   --danger: #dc2626;
-  --card: #ffffff;
-  --card-border: rgba(148, 163, 184, 0.25);
-  --card-hover: rgba(241, 245, 249, 0.5);
   --muted: #64748b;
   --subtle: #94a3b8;
-  --hero-dark: #0f172a;
 }
 
 @theme inline {
@@ -30,12 +26,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-card: var(--card);
-  --color-card-border: var(--card-border);
-  --color-card-hover: var(--card-hover);
   --color-muted: var(--muted);
   --color-subtle: var(--subtle);
-  --color-hero-dark: var(--hero-dark);
   --font-sans: var(--font-outfit);
 }
 

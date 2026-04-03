@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function GuideControleTechnique() {
   return (
     <div className="min-h-full flex flex-col">
-      <header className="border-b border-card-border bg-card/80 backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center shadow-md shadow-teal-500/20">
@@ -85,15 +85,15 @@ export default function GuideControleTechnique() {
               <h2 className="text-2xl font-bold text-foreground mb-4">Les 3 niveaux de défaillance</h2>
               <p>Chaque point de contrôle peut donner lieu à une défaillance classée en 3 niveaux :</p>
               <div className="mt-4 flex flex-col gap-3">
-                <div className="p-4 rounded-xl border-l-4 border-l-stone-300 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-stone-300 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Défaillance mineure</p>
                   <p className="text-sm text-muted mt-1">Anomalie sans impact immédiat sur la sécurité. Le CT est <strong>favorable</strong>. Exemple : légère usure des essuie-glaces.</p>
                 </div>
-                <div className="p-4 rounded-xl border-l-4 border-l-amber-400 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-amber-400 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Défaillance majeure</p>
                   <p className="text-sm text-muted mt-1">Anomalie affectant la sécurité ou l&apos;environnement. Le CT est <strong>défavorable</strong> : vous avez 2 mois pour réparer et passer une contre-visite.</p>
                 </div>
-                <div className="p-4 rounded-xl border-l-4 border-l-red-400 bg-card border border-card-border">
+                <div className="p-4 rounded-xl border-l-4 border-l-red-400 bg-card border border-slate-200/50">
                   <p className="font-bold text-foreground">Défaillance critique</p>
                   <p className="text-sm text-muted mt-1">Danger immédiat. Le CT est <strong>défavorable</strong> et le véhicule ne peut plus circuler à partir du lendemain. Vous devez le faire remorquer pour réparation.</p>
                 </div>
@@ -145,7 +145,7 @@ export default function GuideControleTechnique() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-card-border text-left">
+                    <tr className="border-b border-slate-200/50 text-left">
                       <th className="py-2 font-semibold text-foreground">Réparation</th>
                       <th className="py-2 font-semibold text-foreground text-right">Fourchette</th>
                     </tr>
@@ -162,7 +162,7 @@ export default function GuideControleTechnique() {
                       ["Réglage des phares", "25 - 60 €"],
                       ["Balais d'essuie-glace", "15 - 50 €"],
                     ].map(([label, price]) => (
-                      <tr key={label} className="border-b border-card-border/50">
+                      <tr key={label} className="border-b border-slate-200/50/50">
                         <td className="py-2">{label}</td>
                         <td className="py-2 text-right font-semibold tabular-nums text-foreground">{price}</td>
                       </tr>
@@ -188,7 +188,7 @@ export default function GuideControleTechnique() {
         </article>
       </main>
 
-      <footer className="border-t border-card-border py-8 mt-auto bg-card/50">
+      <footer className="border-t border-slate-200/50 py-8 mt-auto bg-white/50">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
           <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
           <div className="flex items-center gap-4 text-xs">
