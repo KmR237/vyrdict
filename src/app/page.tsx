@@ -10,6 +10,7 @@ import { VerdictBanner } from "@/components/VerdictBanner";
 import { BudgetSimulator } from "@/components/BudgetSimulator";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { EmailCapture } from "@/components/EmailCapture";
 
 type AppState = "idle" | "dragging" | "loading" | "results" | "error";
 
@@ -594,6 +595,9 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Email capture */}
+            {!isDemo && <EmailCapture result={displayResult} shareUrl={getShareUrl()} />}
 
             {/* Conseils */}
             <div className="bg-card rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
