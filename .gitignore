@@ -36,6 +36,18 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code
+.claude/
+
+# squirrelscan
+squirrel.toml
+.squirrel/
+
+# audit scripts
+audit-*.mjs
+playwright_*.mjs
+*-screenshots/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
