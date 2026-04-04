@@ -12,6 +12,7 @@ import { BudgetSimulator } from "@/components/BudgetSimulator";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { EmailCapture } from "@/components/EmailCapture";
+import pako from "pako";
 
 type AppState = "idle" | "dragging" | "loading" | "results" | "error";
 
@@ -46,15 +47,52 @@ function launchConfetti() {
   setTimeout(() => els.forEach((el) => el.remove()), 5000);
 }
 
+function compressResult(result: AnalyseResult): string {
+  const json = JSON.stringify(result);
+  const compressed = pako.deflate(new TextEncoder().encode(json));
+  // Convert Uint8Array to base64 safely
+  let binary = "";
+  for (let i = 0; i < compressed.length; i++) binary += String.fromCharCode(compressed[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 function parseSharedResult(encoded: string): AnalyseResult | null {
   try {
-    const json = decodeURIComponent(escape(atob(encoded)));
+    // Try compressed format first (pako)
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const decompressed = pako.inflate(bytes);
+    const json = new TextDecoder().decode(decompressed);
     const parsed = JSON.parse(json);
     const validated = AnalyseResultSchema.safeParse(parsed);
     return validated.success ? validated.data : null;
   } catch {
-    return null;
+    // Fallback: try old uncompressed format
+    try {
+      const json = decodeURIComponent(escape(atob(encoded)));
+      const parsed = JSON.parse(json);
+      const validated = AnalyseResultSchema.safeParse(parsed);
+      return validated.success ? validated.data : null;
+    } catch {
+      return null;
+    }
   }
+}
+
+function buildShareMessage(result: AnalyseResult, url: string): string {
+  const verdictEmoji = result.verdict === "reparer" ? "\u2705" : result.verdict === "vendre" ? "\u274c" : "\u26a0\ufe0f";
+  const verdictLabel = result.verdict === "reparer" ? "Réparer" : result.verdict === "vendre" ? "Envisager la vente" : "À arbitrer";
+  return [
+    `\ud83d\ude97 ${result.vehicule.marque} ${result.vehicule.modele}${result.vehicule.annee ? ` (${result.vehicule.annee})` : ""}`,
+    `\ud83d\udcca Score santé : ${result.score_sante}/100`,
+    `\ud83d\udcb0 Coût estimé : ${result.cout_total_min.toLocaleString("fr-FR")} - ${result.cout_total_max.toLocaleString("fr-FR")} \u20ac`,
+    `${verdictEmoji} Verdict : ${verdictLabel}`,
+    "",
+    `Voir le rapport complet :`,
+    url,
+  ].join("\n");
 }
 
 export default function Home() {
@@ -262,7 +300,7 @@ export default function Home() {
   // Share
   const getShareUrl = useCallback(() => {
     if (!result) return "";
-    return `${window.location.origin}?r=${btoa(unescape(encodeURIComponent(JSON.stringify(result))))}`;
+    return `${window.location.origin}?r=${compressResult(result)}`;
   }, [result]);
 
   const copyLink = useCallback(() => {
@@ -272,12 +310,18 @@ export default function Home() {
   }, [getShareUrl]);
 
   const shareWhatsApp = useCallback(() => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Mon contrôle technique analysé par Vyrdict : ${getShareUrl()}`)}`, "_blank");
-  }, [getShareUrl]);
+    if (!displayResult) return;
+    const url = getShareUrl();
+    const message = buildShareMessage(displayResult, url);
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  }, [getShareUrl, displayResult]);
 
   const shareSMS = useCallback(() => {
-    window.open(`sms:?body=${encodeURIComponent(`Mon CT analysé par Vyrdict : ${getShareUrl()}`)}`, "_blank");
-  }, [getShareUrl]);
+    if (!displayResult) return;
+    const url = getShareUrl();
+    const message = buildShareMessage(displayResult, url);
+    window.open(`sms:?body=${encodeURIComponent(message)}`, "_blank");
+  }, [getShareUrl, displayResult]);
 
   return (
     <div className="flex flex-col min-h-full">
