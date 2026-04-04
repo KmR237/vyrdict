@@ -18,11 +18,13 @@ type AppState = "idle" | "dragging" | "loading" | "results" | "error";
 const RATIO_REPARER = 0.35; // Coût < 35% de la cote → réparer
 const RATIO_VENDRE = 0.75;  // Coût > 75% de la cote → vendre
 
+// Les 3 premières phases sont cosmétiques (timing fixe)
+// La phase "Verdict" est synchronisée sur la réponse API
 const LOADING_PHASES = [
-  { label: "Lecture du document", duration: 2000, keywords: [] as string[] },
-  { label: "Détection des défaillances", duration: 3000, keywords: ["Freinage", "Éclairage", "Pneus", "Échappement", "Suspension"] },
-  { label: "Calcul des coûts", duration: 2500, keywords: ["Plaquettes", "Amortisseurs", "Catalyseur"] },
-  { label: "Verdict", duration: 2000, keywords: [] as string[] },
+  { label: "Lecture du document", duration: 1500, keywords: [] as string[] },
+  { label: "Détection des défaillances", duration: 2500, keywords: ["Freinage", "Éclairage", "Pneus", "Échappement", "Suspension"] },
+  { label: "Calcul des coûts", duration: 2000, keywords: ["Plaquettes", "Amortisseurs", "Catalyseur"] },
+  { label: "Finalisation du verdict", duration: 0, keywords: [] as string[] }, // durée 0 = attend l'API
 ];
 
 function launchConfetti() {
@@ -69,6 +71,7 @@ export default function Home() {
   const [detectedKeywords, setDetectedKeywords] = useState<string[]>([]);
   const [defaillanceCount, setDefaillanceCount] = useState(0);
   const [showGauge, setShowGauge] = useState(false);
+  const [apiReady, setApiReady] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -83,15 +86,17 @@ export default function Home() {
     setDetectedKeywords([]);
     setDefaillanceCount(0);
     setShowGauge(false);
+    setApiReady(false);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     let elapsed = 0;
 
+    // Only schedule the first 3 phases (cosmetic, fixed timing)
     LOADING_PHASES.forEach((phase, phaseIdx) => {
-      // Advance to this phase
+      if (phase.duration === 0) return; // Skip "Verdict" phase — it's API-synced
+
       timers.push(setTimeout(() => setLoadingStep(phaseIdx), elapsed));
 
-      // Pop keywords one by one during this phase
       phase.keywords.forEach((kw, kwIdx) => {
         timers.push(setTimeout(() => {
           setDetectedKeywords((prev) => [...prev, kw]);
@@ -102,8 +107,11 @@ export default function Home() {
       elapsed += phase.duration;
     });
 
-    // Show gauge near the end
-    timers.push(setTimeout(() => setShowGauge(true), elapsed - 1500));
+    // After cosmetic phases: switch to "Verdict" phase + show gauge
+    timers.push(setTimeout(() => {
+      setLoadingStep(3);
+      setShowGauge(true);
+    }, elapsed));
 
     return () => timers.forEach(clearTimeout);
   }, [state]);
@@ -184,9 +192,11 @@ export default function Home() {
     setCodePostal("");
     setIsDemo(false);
     setIsSharedView(false);
+    setApiReady(false);
     setPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return f.type.startsWith("image/") ? URL.createObjectURL(f) : null; });
     setState("loading");
 
+    const startTime = Date.now();
     const formData = new FormData();
     formData.append("file", f);
 
@@ -204,6 +214,14 @@ export default function Home() {
         setState("error");
         return;
       }
+
+      // Ensure minimum 4 seconds of animation before showing results
+      const elapsed = Date.now() - startTime;
+      const minDelay = Math.max(0, 4000 - elapsed);
+
+      setApiReady(true);
+      await new Promise((r) => setTimeout(r, minDelay));
+
       setResult(validated.data);
       setBudget(validated.data.cout_total_max);
       setState("results");
@@ -557,9 +575,11 @@ export default function Home() {
               <div className="flex flex-col gap-6 flex-1 text-center sm:text-left">
                 {/* Current phase */}
                 <div>
-                  <p className="text-xs text-muted uppercase tracking-wider font-medium mb-1">Analyse en cours</p>
+                  <p className="text-xs text-muted uppercase tracking-wider font-medium mb-1">
+                    {apiReady ? "Prêt" : "Analyse en cours"}
+                  </p>
                   <p className="text-xl sm:text-2xl font-bold text-foreground transition-all duration-300">
-                    {LOADING_PHASES[loadingStep]?.label}
+                    {apiReady ? "Votre verdict est prêt" : LOADING_PHASES[loadingStep]?.label}
                   </p>
                   <p className="text-sm text-muted mt-1">{file?.name}</p>
                 </div>
