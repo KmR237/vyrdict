@@ -77,7 +77,7 @@ function BudgetItem({ defaillance: d }: { defaillance: Defaillance & { covered: 
         <span className={d.covered ? "" : "line-through"}>{d.libelle}</span>
         <GraviteBadge gravite={d.gravite} small />
       </div>
-      <span className="font-semibold whitespace-nowrap tabular-nums">{d.cout_max.toLocaleString("fr-FR")} &euro;</span>
+      <span className="font-semibold whitespace-nowrap tabular-nums">~{(d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)).toLocaleString("fr-FR")} &euro;</span>
     </div>
   );
 }

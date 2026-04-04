@@ -87,7 +87,7 @@ function buildShareMessage(result: AnalyseResult, url: string): string {
   return [
     `\ud83d\ude97 ${result.vehicule.marque} ${result.vehicule.modele}${result.vehicule.annee ? ` (${result.vehicule.annee})` : ""}`,
     `\ud83d\udcca Score santé : ${result.score_sante}/100`,
-    `\ud83d\udcb0 Coût estimé : ${result.cout_total_min.toLocaleString("fr-FR")} - ${result.cout_total_max.toLocaleString("fr-FR")} \u20ac`,
+    `\ud83d\udcb0 Coût estimé : ~${Math.round((result.cout_total_min + result.cout_total_max) / 2).toLocaleString("fr-FR")} \u20ac (${result.cout_total_min.toLocaleString("fr-FR")}-${result.cout_total_max.toLocaleString("fr-FR")})`,
     `${verdictEmoji} Verdict : ${verdictLabel}`,
     "",
     `Voir le rapport complet :`,
@@ -734,8 +734,11 @@ export default function Home() {
               </div>
               <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Coût estimé</span>
-                <span className="text-xl font-extrabold mt-3 bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent tabular-nums">
-                  {displayResult.cout_total_min.toLocaleString("fr-FR")} - {displayResult.cout_total_max.toLocaleString("fr-FR")} &euro;
+                <span className="text-2xl font-black mt-3 text-foreground tabular-nums">
+                  ~{Math.round((displayResult.cout_total_min + displayResult.cout_total_max) / 2).toLocaleString("fr-FR")} &euro;
+                </span>
+                <span className="text-xs text-muted mt-1 tabular-nums">
+                  ({displayResult.cout_total_min.toLocaleString("fr-FR")} - {displayResult.cout_total_max.toLocaleString("fr-FR")} &euro;)
                 </span>
                 <span className="text-xs text-slate-500 mt-1.5 font-medium">{displayResult.defaillances.length} défaillance{displayResult.defaillances.length > 1 ? "s" : ""}</span>
                 {codePostal.length === 5 && (

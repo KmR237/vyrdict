@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { AnalyseResultSchema } from "@/lib/types";
-import { REPAIR_COSTS } from "@/lib/repair-costs";
+import { buildPriceReference } from "@/lib/repair-costs";
 
 const anthropic = new Anthropic();
 
@@ -34,6 +34,9 @@ Analyse le document et retourne UNIQUEMENT un JSON valide (sans markdown, sans b
       "localisation": "string (ex: AVG, AVD, ARG, ARD, AV, AR)",
       "cout_min": number,
       "cout_max": number,
+      "cout_moyen": number,
+      "cout_piece": "string (ex: 'Pièce : 30-80€')",
+      "cout_main_oeuvre": "string (ex: 'Main-d œuvre : 50-100€')",
       "priorite": 1 | 2 | 3,
       "reparation": "string (action à faire, 1 phrase)",
       "peut_faire_soi_meme": boolean
@@ -53,7 +56,14 @@ RÈGLES DE CALCUL :
 - cote_argus_estimee : toujours null (l'utilisateur la saisira)
 - verdict : sans cote Argus, base-toi uniquement sur le coût total. Si < 500€ → "reparer", si > 2000€ → "arbitrage", sinon → "reparer"
 - priorite : 1 = bloque la contre-visite (défaillances majeures/critiques), 2 = sécurité, 3 = confort/esthétique (mineures)
-- Coûts : UTILISE IMPÉRATIVEMENT le référentiel de prix ci-dessous. Ne les invente pas. Fourchette basse = petite citadine, haute = berline/SUV
+- Coûts : UTILISE IMPÉRATIVEMENT le référentiel de prix ci-dessous. Les prix sont en base CITADINE. Adapte selon le véhicule détecté sur le CT :
+  - Citadine (Clio, 208, C3, Polo) : utilise les prix tels quels
+  - Berline (308, Golf, Mégane) : multiplie par 1.2
+  - SUV/Crossover (3008, Tiguan, Kadjar) : multiplie par 1.3
+  - Premium (BMW, Audi, Mercedes, Volvo) : multiplie par 1.5
+- cout_moyen : la MOYENNE de cout_min et cout_max (après ajustement véhicule)
+- cout_piece : estimation du coût de la pièce seule (ex: "Pièce : 30-80€")
+- cout_main_oeuvre : estimation de la main-d'œuvre (ex: "Main-d'œuvre : 50-100€")
 - peut_faire_soi_meme : true uniquement pour ampoules, essuie-glaces, plaquettes simples, liquides, petits équipements
 - conseils : 3 conseils pratiques et contextualisés
 
@@ -63,10 +73,10 @@ Si le document n'est PAS un contrôle technique, retourne :
 Si le document est illisible, retourne :
 {"error": "Le document est illisible. Essayez avec une photo plus nette ou le PDF original."}
 
-RÉFÉRENTIEL DE PRIX VÉRIFIÉS (garage indépendant France 2025-2026) :
-${REPAIR_COSTS.map((r) => `- ${r.label} : ${r.cout_min}-${r.cout_max}€ (source: ${r.source})`).join("\n")}
+RÉFÉRENTIEL DE PRIX VÉRIFIÉS — BASE CITADINE (garage indépendant France 2025-2026) :
+${buildPriceReference()}
 
-UTILISE ce référentiel comme base pour tes estimations de coûts. Si une défaillance ne correspond à aucune entrée du référentiel, estime le prix de manière réaliste.
+UTILISE ce référentiel comme base. Adapte les prix au véhicule détecté (citadine/berline/SUV/premium). Si une défaillance ne correspond à aucune entrée, estime de manière réaliste en respectant le segment véhicule.
 
 IMPORTANT : retourne UNIQUEMENT le JSON, rien d'autre.`;
 
