@@ -631,14 +631,44 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-slate-100 py-8 mt-auto bg-slate-50/80">
-        <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
-          <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
-          <div className="flex items-center gap-4 text-xs">
-            <span>Outil informatif, ne remplace pas un diagnostic professionnel.</span>
-            <Link href="/guide-controle-technique" className="text-primary hover:underline font-medium">Guide CT</Link>
-            <Link href="/contre-visite" className="text-primary hover:underline font-medium">Contre-visite</Link>
-            <Link href="/mentions-legales" className="text-primary hover:underline font-medium">Mentions légales</Link>
+      <footer className="border-t border-slate-100 mt-auto bg-slate-50/80">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">V</span>
+                </div>
+                <span className="font-bold text-foreground">Vyrdict</span>
+              </div>
+              <p className="text-sm text-muted leading-relaxed">Analyseur de contrôle technique par IA. Estimez vos coûts de réparation en 10 secondes.</p>
+              <Link href="/" className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-primary-dark hover:text-primary transition-colors">
+                Analyser mon CT &rarr;
+              </Link>
+            </div>
+
+            {/* Ressources */}
+            <div>
+              <h3 className="font-semibold text-foreground text-sm mb-3">Ressources</h3>
+              <ul className="flex flex-col gap-2 text-sm text-muted">
+                <li><Link href="/guide-controle-technique" className="hover:text-primary transition-colors">Guide du contrôle technique</Link></li>
+                <li><Link href="/contre-visite" className="hover:text-primary transition-colors">Contre-visite : délais et coûts</Link></li>
+                <li><a href="#faq" className="hover:text-primary transition-colors">Questions fréquentes</a></li>
+              </ul>
+            </div>
+
+            {/* Légal */}
+            <div>
+              <h3 className="font-semibold text-foreground text-sm mb-3">Légal</h3>
+              <ul className="flex flex-col gap-2 text-sm text-muted">
+                <li><Link href="/mentions-legales" className="hover:text-primary transition-colors">Mentions légales</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-200/50 text-xs text-muted text-center sm:text-left">
+            &copy; 2026 Vyrdict — Estimations indicatives, ne remplacent pas un diagnostic professionnel.
           </div>
         </div>
       </footer>
