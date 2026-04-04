@@ -496,10 +496,33 @@ export default function Home() {
                   {preview ? (
                     <img src={preview} alt="Aperçu du document" width={192} height={256} className="w-full h-full object-cover opacity-60" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-                      <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                    <div className="w-full h-full bg-white p-4 flex flex-col gap-2" aria-hidden="true">
+                      {/* Stylized CT document illustration */}
+                      <div className="flex gap-1 h-2">
+                        <div className="flex-1 bg-blue-400 rounded-sm" />
+                        <div className="flex-1 bg-white rounded-sm" />
+                        <div className="flex-1 bg-red-400 rounded-sm" />
+                      </div>
+                      <div className="text-center mt-1">
+                        <p className="text-[8px] font-black text-slate-400 tracking-wider">CONTRÔLE TECHNIQUE</p>
+                        <p className="text-[6px] text-slate-300 mt-0.5">PROCÈS-VERBAL</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5 mt-2">
+                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-4/5" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-3/5" />
+                        <div className="h-1.5 bg-amber-100 rounded-full w-full" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-4/5" />
+                        <div className="h-1.5 bg-red-100 rounded-full w-full" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-2/3" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
+                        <div className="h-1.5 bg-amber-100 rounded-full w-4/5" />
+                      </div>
+                      <div className="mt-auto flex justify-between items-end">
+                        <div className="w-8 h-8 border border-slate-200 rounded" />
+                        <div className="h-1.5 bg-slate-100 rounded-full w-16" />
+                      </div>
                     </div>
                   )}
                   {/* Scan line */}
@@ -539,12 +562,6 @@ export default function Home() {
                     {LOADING_PHASES[loadingStep]?.label}
                   </p>
                   <p className="text-sm text-muted mt-1">{file?.name}</p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${((loadingStep + 1) / LOADING_PHASES.length) * 100}%` }} />
                 </div>
 
                 {/* Live counters */}
