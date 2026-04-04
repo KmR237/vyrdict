@@ -276,16 +276,6 @@ export default function Home() {
               <p className="mt-5 text-muted max-w-lg mx-auto text-base sm:text-lg leading-relaxed animate-fade-up-delay-2">
                 Déposez votre procès-verbal et obtenez le coût des réparations, un score de santé et un verdict clair.
               </p>
-              <div className="mt-5 flex items-center justify-center gap-2 text-sm text-muted animate-fade-up-delay-3">
-                <div className="flex -space-x-2">
-                  {["bg-teal-500", "bg-amber-500", "bg-emerald-500", "bg-slate-400"].map((c, i) => (
-                    <div key={i} className={`w-7 h-7 rounded-full ${c} border-2 border-background flex items-center justify-center text-white text-[10px] font-bold`}>
-                      {["Y", "M", "S", "+"]}
-                    </div>
-                  ))}
-                </div>
-                <span>Plus de <strong className="text-foreground">500 contrôles</strong> analysés</span>
-              </div>
             </div>
 
             {/* Upload section */}
