@@ -217,7 +217,7 @@ export default function Home() {
     <div className="flex flex-col min-h-full">
       {/* HEADER */}
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           {/* Logo + descripteur */}
           <button onClick={reset} className="flex items-center gap-2.5 cursor-pointer group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center shadow-md shadow-teal-500/20 group-hover:shadow-lg group-hover:shadow-teal-500/30 transition-shadow">
@@ -264,7 +264,7 @@ export default function Home() {
         {(state === "idle" || state === "dragging") && (
           <div className="flex flex-col items-center">
             {/* Hero */}
-            <div className="w-full max-w-3xl mx-auto px-4 pt-8 pb-10 sm:pt-12 sm:pb-14 text-center">
+            <div className="w-full max-w-4xl mx-auto px-4 pt-8 pb-10 sm:pt-12 sm:pb-14 text-center">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-primary text-xs font-medium mb-5 animate-fade-up">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 Gratuit et sans inscription
@@ -354,7 +354,8 @@ export default function Home() {
             </div>
 
             {/* Demo preview */}
-            <div id="exemple" className="w-full max-w-2xl mx-auto px-4 mt-12 mb-8 scroll-mt-20 border-t border-slate-200/60 pt-10">
+            <div className="w-full bg-slate-50/80 mt-12 py-12">
+            <div id="exemple" className="w-full max-w-3xl mx-auto px-4 scroll-mt-20">
               <h2 className="text-center font-bold text-xl mb-6 text-slate-700">Exemple d&apos;analyse</h2>
               <div className="relative">
                 <div className="flex flex-col gap-4">
@@ -404,9 +405,10 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            </div>
 
             {/* ─── FAQ SEO ─── */}
-            <div id="faq" className="w-full max-w-2xl mx-auto px-4 mt-12 mb-8 border-t border-slate-200/60 pt-10 scroll-mt-20">
+            <div id="faq" className="w-full max-w-3xl mx-auto px-4 py-12 scroll-mt-20">
               <h2 className="text-center font-bold text-xl mb-6 text-foreground [text-wrap:balance]">Questions fréquentes sur le contrôle technique</h2>
               <div className="flex flex-col gap-3">
                 {[
@@ -506,7 +508,7 @@ export default function Home() {
 
         {/* ─── RESULTS ─── */}
         {state === "results" && displayResult && (
-          <div ref={resultsRef} className="max-w-3xl mx-auto px-4 flex flex-col gap-5 py-6">
+          <div ref={resultsRef} className="max-w-4xl mx-auto px-4 flex flex-col gap-5 py-6">
             {/* Banners */}
             {(isDemo || isSharedView) && (
               <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-2xl p-4 flex items-center justify-between animate-fade-up">
@@ -629,7 +631,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200/40 py-8 mt-auto bg-white/50">
+      <footer className="border-t border-slate-100 py-8 mt-auto bg-slate-50/80">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
           <span className="font-medium">Vyrdict — Analyse de contrôle technique par IA</span>
           <div className="flex items-center gap-4 text-xs">
