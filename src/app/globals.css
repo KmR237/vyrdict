@@ -101,6 +101,41 @@ body {
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 .animate-number { animation: number-scroll 0.5s ease-out both; }
 
+/* ─── Loading scan effect ─── */
+@keyframes scan-sweep {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 95%; opacity: 0; }
+}
+
+@keyframes keyword-pop {
+  0% { opacity: 0; transform: scale(0.6) translateY(8px); }
+  50% { opacity: 1; transform: scale(1.1) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes counter-tick {
+  0% { transform: translateY(100%); opacity: 0; }
+  30% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes gauge-build {
+  0% { stroke-dasharray: 0 264; }
+}
+
+@keyframes blur-reveal {
+  0% { filter: blur(12px); opacity: 0; }
+  100% { filter: blur(0); opacity: 1; }
+}
+
+.animate-scan { animation: scan-sweep 2.5s ease-in-out infinite; }
+.animate-keyword-pop { animation: keyword-pop 0.4s ease-out both; }
+.animate-counter-tick { animation: counter-tick 0.3s ease-out both; }
+.animate-gauge-build { animation: gauge-build 1.5s ease-out both; }
+.animate-blur-reveal { animation: blur-reveal 0.8s ease-out both; }
+
 .confetti-piece {
   position: fixed;
   top: -10px;
