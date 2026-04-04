@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import type { AnalyseResult } from "@/lib/types";
 import { AnalyseResultSchema } from "@/lib/types";
+import { adjustCosts, getRegionLabel, getVehicleLabel } from "@/lib/price-coefficients";
 import { DEMO_RESULT } from "@/lib/demo-data";
 import { DefaillanceCard } from "@/components/DefaillanceCard";
 import { VerdictBanner } from "@/components/VerdictBanner";
@@ -63,6 +64,7 @@ export default function Home() {
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
   const [budget, setBudget] = useState(0);
   const [coteArgus, setCoteArgus] = useState("");
+  const [codePostal, setCodePostal] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [isDemo, setIsDemo] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
@@ -106,10 +108,29 @@ export default function Home() {
   // Verdict recalculated with user cote
   const displayResult = useMemo(() => {
     if (!result) return null;
-    const cote = coteArgus ? parseInt(coteArgus) : null;
-    if (!cote || cote <= 0) return result;
 
-    const ratio = result.cout_total_max / cote;
+    // Ajuster les prix avec les coefficients région + véhicule
+    const cp = codePostal.length === 5 ? codePostal : undefined;
+    const marque = result.vehicule.marque || undefined;
+    const adjusted = adjustCosts(result.cout_total_min, result.cout_total_max, cp, marque);
+
+    const adjustedDefaillances = result.defaillances.map((d) => {
+      const adj = adjustCosts(d.cout_min, d.cout_max, cp, marque);
+      return { ...d, cout_min: adj.cout_min, cout_max: adj.cout_max };
+    });
+
+    const adjustedResult = {
+      ...result,
+      cout_total_min: adjusted.cout_min,
+      cout_total_max: adjusted.cout_max,
+      defaillances: adjustedDefaillances,
+    };
+
+    // Verdict avec cote Argus
+    const cote = coteArgus ? parseInt(coteArgus) : null;
+    if (!cote || cote <= 0) return adjustedResult;
+
+    const ratio = adjustedResult.cout_total_max / cote;
     const pct = Math.round(ratio * 100);
     let verdict: AnalyseResult["verdict"];
     let conseil: string;
@@ -124,8 +145,8 @@ export default function Home() {
       verdict = "arbitrage";
       conseil = `Le coût max représente ${pct}% de la valeur. C'est un cas limite — comparez avec des devis réels.`;
     }
-    return { ...result, cote_argus_estimee: cote, verdict, conseil_verdict: conseil };
-  }, [result, coteArgus]);
+    return { ...adjustedResult, cote_argus_estimee: cote, verdict, conseil_verdict: conseil };
+  }, [result, coteArgus, codePostal]);
 
   // File handlers
   const handleFile = useCallback(async (f: File) => {
@@ -135,6 +156,7 @@ export default function Home() {
     setExpandedCode(null);
     setBudget(0);
     setCoteArgus("");
+    setCodePostal("");
     setIsDemo(false);
     setIsSharedView(false);
     setPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return f.type.startsWith("image/") ? URL.createObjectURL(f) : null; });
@@ -187,6 +209,7 @@ export default function Home() {
     setExpandedCode(null);
     setBudget(0);
     setCoteArgus("");
+    setCodePostal("");
     setIsDemo(false);
     setIsSharedView(false);
     setCopied(false);
@@ -528,28 +551,42 @@ export default function Home() {
             </div>
 
             {/* Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 animate-fade-up-delay-1">
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center shadow-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-fade-up-delay-1">
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Score santé</span>
                 <div className="mt-3"><ScoreGauge score={displayResult.score_sante} /></div>
               </div>
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Coût estimé</span>
-                <span className="text-2xl font-extrabold mt-3 bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                <span className="text-xl font-extrabold mt-3 bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent tabular-nums">
                   {displayResult.cout_total_min.toLocaleString("fr-FR")} - {displayResult.cout_total_max.toLocaleString("fr-FR")} &euro;
                 </span>
                 <span className="text-xs text-slate-500 mt-1.5 font-medium">{displayResult.defaillances.length} défaillance{displayResult.defaillances.length > 1 ? "s" : ""}</span>
+                {codePostal.length === 5 && (
+                  <span className="text-[10px] text-primary mt-1 font-medium">{getRegionLabel(codePostal)}</span>
+                )}
               </div>
-              <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Votre cote Argus</span>
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Code postal</span>
+                <input type="text" inputMode="numeric" name="code_postal" placeholder="40100…" maxLength={5} value={codePostal}
+                  onChange={(e) => setCodePostal(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  autoComplete="postal-code" aria-label="Code postal"
+                  className="w-20 text-center text-2xl font-extrabold bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-400 placeholder:text-lg mt-3" />
+                <p className="text-[11px] text-slate-400 mt-1.5">Affine les prix par région</p>
+                {codePostal.length === 5 && result && (
+                  <span className="text-[10px] text-muted mt-1">{getVehicleLabel(result.vehicule.marque)}</span>
+                )}
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Cote Argus</span>
                 <div className="flex items-center gap-1 mt-3">
                   <input type="number" inputMode="numeric" name="cote_argus" placeholder="4 500…" value={coteArgus} onChange={(e) => setCoteArgus(e.target.value)} autoComplete="off" spellCheck={false} aria-label="Cote Argus en euros"
-                    className="w-24 text-center text-2xl font-extrabold bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-400 placeholder:text-lg tabular-nums" />
+                    className="w-20 text-center text-2xl font-extrabold bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-400 placeholder:text-lg tabular-nums" />
                   <span className="text-2xl font-extrabold text-slate-400">&euro;</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">Saisissez pour affiner le verdict</p>
+                <p className="text-[11px] text-slate-400 mt-1.5">Affine le verdict</p>
                 <a href="https://www.lacentrale.fr/cote-auto.html" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1.5 font-medium">
-                  Trouver sur LaCentrale &rarr;
+                  LaCentrale &rarr;
                 </a>
               </div>
             </div>
