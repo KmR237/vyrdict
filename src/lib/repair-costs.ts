@@ -95,6 +95,55 @@ export const REPAIR_COSTS: RepairCost[] = [
   { keywords: ["jeu", "rotule", "suspension"], label: "Rotule de suspension", cout_min: 80, cout_max: 200, cout_piece_min: 10, cout_piece_max: 50, cout_mo_min: 70, cout_mo_max: 150, peut_faire_soi_meme: false, source: "iDGarages" },
   { keywords: ["moyeu", "roue"], label: "Moyeu de roue", cout_min: 120, cout_max: 250, cout_piece_min: 40, cout_piece_max: 100, cout_mo_min: 80, cout_mo_max: 150, peut_faire_soi_meme: false, source: "iDGarages" },
   { keywords: ["voyant", "tableau", "bord", "abs", "esp"], label: "Diagnostic voyant tableau de bord", cout_min: 40, cout_max: 80, cout_piece_min: 0, cout_piece_max: 0, cout_mo_min: 40, cout_mo_max: 80, peut_faire_soi_meme: false, source: "iDGarages" },
+
+  // ═══ DÉFAILLANCES FRÉQUENTES CT — AJOUT V2 ═══
+
+  // Systèmes de sécurité active
+  { keywords: ["capteur", "abs"], label: "Capteur ABS", cout_min: 80, cout_max: 200, cout_piece_min: 30, cout_piece_max: 100, cout_mo_min: 50, cout_mo_max: 100, peut_faire_soi_meme: false, source: "AUTODOC" },
+  { keywords: ["bloc", "abs", "hydraulique"], label: "Bloc ABS (réparation)", cout_min: 250, cout_max: 500, cout_piece_min: 150, cout_piece_max: 350, cout_mo_min: 100, cout_mo_max: 150, peut_faire_soi_meme: false, source: "AUTODOC" },
+  { keywords: ["capteur", "tpms", "pression", "pneu"], label: "Capteur TPMS (pression pneu)", cout_min: 40, cout_max: 100, cout_piece_min: 20, cout_piece_max: 60, cout_mo_min: 20, cout_mo_max: 40, peut_faire_soi_meme: false, source: "Vroomly" },
+  { keywords: ["esp", "stabilité", "antipatinage"], label: "Diagnostic ESP / contrôle stabilité", cout_min: 50, cout_max: 120, cout_piece_min: 0, cout_piece_max: 30, cout_mo_min: 50, cout_mo_max: 90, peut_faire_soi_meme: false, source: "iDGarages" },
+
+  // Direction assistée
+  { keywords: ["direction", "assistée", "pompe", "fuite"], label: "Fuite direction assistée", cout_min: 150, cout_max: 350, cout_piece_min: 30, cout_piece_max: 160, cout_mo_min: 75, cout_mo_max: 190, peut_faire_soi_meme: false, source: "Vroomly" },
+  { keywords: ["colonne", "direction"], label: "Colonne de direction (jeu)", cout_min: 60, cout_max: 200, cout_piece_min: 0, cout_piece_max: 80, cout_mo_min: 60, cout_mo_max: 120, peut_faire_soi_meme: false, source: "AUTODOC" },
+
+  // Fermetures / structure
+  { keywords: ["portière", "fermeture", "serrure"], label: "Serrure / mécanisme portière", cout_min: 80, cout_max: 200, cout_piece_min: 30, cout_piece_max: 100, cout_mo_min: 50, cout_mo_max: 100, peut_faire_soi_meme: false, source: "Vroomly" },
+  { keywords: ["capot", "coffre", "charnière"], label: "Réparation capot / coffre", cout_min: 50, cout_max: 150, cout_piece_min: 15, cout_piece_max: 60, cout_mo_min: 35, cout_mo_max: 90, peut_faire_soi_meme: false, source: "iDGarages" },
+  { keywords: ["corrosion", "longeron", "passage", "roue"], label: "Corrosion longeron / passage de roue", cout_min: 250, cout_max: 600, cout_piece_min: 50, cout_piece_max: 150, cout_mo_min: 200, cout_mo_max: 450, peut_faire_soi_meme: false, source: "AUTODOC" },
+
+  // Échappement compléments
+  { keywords: ["pot", "intermédiaire", "échappement"], label: "Pot d'échappement intermédiaire", cout_min: 150, cout_max: 280, cout_piece_min: 80, cout_piece_max: 180, cout_mo_min: 60, cout_mo_max: 100, peut_faire_soi_meme: false, source: "iDGarages" },
+  { keywords: ["collecteur", "échappement"], label: "Collecteur d'échappement", cout_min: 180, cout_max: 400, cout_piece_min: 80, cout_piece_max: 200, cout_mo_min: 100, cout_mo_max: 200, peut_faire_soi_meme: false, source: "AUTODOC" },
+
+  // Moteur / suralimentation
+  { keywords: ["turbo", "turbocompresseur", "suralimentation"], label: "Turbo (remplacement)", cout_min: 600, cout_max: 1200, cout_piece_min: 400, cout_piece_max: 800, cout_mo_min: 200, cout_mo_max: 400, peut_faire_soi_meme: false, source: "Captain Garage" },
+  { keywords: ["adblue", "scr", "dépollution"], label: "Système AdBlue / SCR", cout_min: 200, cout_max: 500, cout_piece_min: 100, cout_piece_max: 300, cout_mo_min: 100, cout_mo_max: 200, peut_faire_soi_meme: false, source: "Passion Auto" },
+  { keywords: ["injecteur", "injection"], label: "Injecteur (remplacement)", cout_min: 150, cout_max: 350, cout_piece_min: 60, cout_piece_max: 200, cout_mo_min: 90, cout_mo_max: 150, peut_faire_soi_meme: false, source: "Vroomly" },
+  { keywords: ["joint", "culasse"], label: "Joint de culasse", cout_min: 400, cout_max: 800, cout_piece_min: 20, cout_piece_max: 80, cout_mo_min: 350, cout_mo_max: 720, peut_faire_soi_meme: false, source: "GoodMecano" },
+
+  // Carburant
+  { keywords: ["fuite", "carburant", "essence", "gasoil"], label: "Fuite de carburant (durite/joint)", cout_min: 150, cout_max: 350, cout_piece_min: 40, cout_piece_max: 100, cout_mo_min: 100, cout_mo_max: 250, peut_faire_soi_meme: false, source: "AUTODOC" },
+
+  // Refroidissement
+  { keywords: ["radiateur", "refroidissement"], label: "Radiateur de refroidissement", cout_min: 200, cout_max: 450, cout_piece_min: 80, cout_piece_max: 250, cout_mo_min: 120, cout_mo_max: 200, peut_faire_soi_meme: false, source: "Vroomly" },
+
+  // Suspension compléments
+  { keywords: ["triangle", "suspension", "bras", "inférieur"], label: "Triangle / bras de suspension", cout_min: 120, cout_max: 300, cout_piece_min: 30, cout_piece_max: 120, cout_mo_min: 90, cout_mo_max: 180, peut_faire_soi_meme: false, source: "Vroomly" },
+  { keywords: ["support", "moteur", "silent", "bloc", "moteur"], label: "Support moteur / silent-bloc moteur", cout_min: 100, cout_max: 250, cout_piece_min: 20, cout_piece_max: 80, cout_mo_min: 80, cout_mo_max: 170, peut_faire_soi_meme: false, source: "iDGarages" },
+
+  // Freinage compléments
+  { keywords: ["câble", "frein", "main"], label: "Câble de frein à main", cout_min: 80, cout_max: 180, cout_piece_min: 15, cout_piece_max: 40, cout_mo_min: 60, cout_mo_max: 140, peut_faire_soi_meme: false, source: "Vroomly" },
+
+  // Éclairage compléments
+  { keywords: ["feu", "plaque", "éclairage", "plaque"], label: "Feu de plaque arrière", cout_min: 15, cout_max: 50, cout_piece_min: 5, cout_piece_max: 20, cout_mo_min: 10, cout_mo_max: 30, peut_faire_soi_meme: true, source: "Oscaro" },
+
+  // Compteur
+  { keywords: ["compteur", "odomètre", "kilométrique"], label: "Compteur kilométrique (diagnostic)", cout_min: 60, cout_max: 150, cout_piece_min: 0, cout_piece_max: 50, cout_mo_min: 60, cout_mo_max: 100, peut_faire_soi_meme: false, source: "iDGarages" },
+
+  // Sièges
+  { keywords: ["siège", "fixation", "glissière"], label: "Fixation / glissière de siège", cout_min: 60, cout_max: 180, cout_piece_min: 15, cout_piece_max: 60, cout_mo_min: 45, cout_mo_max: 120, peut_faire_soi_meme: false, source: "iDGarages" },
 ];
 
 function normalize(text: string): string {
