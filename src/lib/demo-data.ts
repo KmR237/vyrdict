@@ -8,6 +8,7 @@ export const DEMO_RESULT: AnalyseResult = {
     annee: "2017",
     kilometrage: 98450,
   },
+  code_postal: "40100",
   score_sante: 62,
   defaillances: [
     {

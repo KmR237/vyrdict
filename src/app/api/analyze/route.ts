@@ -24,6 +24,7 @@ Analyse le document et retourne UNIQUEMENT un JSON valide (sans markdown, sans b
     "annee": "string",
     "kilometrage": number
   },
+  "code_postal": "string (code postal du centre de contrôle technique, lu sur le PV, ex: '40100')",
   "score_sante": number,
   "defaillances": [
     {
@@ -52,10 +53,12 @@ Analyse le document et retourne UNIQUEMENT un JSON valide (sans markdown, sans b
 }
 
 RÈGLES DE CALCUL :
+- code_postal : lis le code postal du centre de contrôle technique sur le PV. Si illisible, retourne ""
 - score_sante = 100 - (15 × nombre de critiques) - (8 × nombre de majeures) - (2 × nombre de mineures), minimum 0
 - cote_argus_estimee : toujours null (l'utilisateur la saisira)
 - verdict : sans cote Argus, base-toi uniquement sur le coût total. Si < 500€ → "reparer", si > 2000€ → "arbitrage", sinon → "reparer"
 - priorite : 1 = bloque la contre-visite (défaillances majeures/critiques), 2 = sécurité, 3 = confort/esthétique (mineures)
+- GRAVITÉ : utilise EXACTEMENT la gravité indiquée sur le procès-verbal (critique, majeur ou mineur). Ne la modifie JAMAIS. Le CT fait autorité. Si tu penses qu'une défaillance est sous-estimée, mentionne-le dans le champ "description" (ex: "Attention : cette défaillance pourrait présenter un risque important") mais garde la gravité officielle du PV
 - Coûts : UTILISE IMPÉRATIVEMENT le référentiel de prix ci-dessous. Les prix sont en base CITADINE. Adapte selon le véhicule détecté sur le CT :
   - Citadine (Clio, 208, C3, Polo) : utilise les prix tels quels
   - Berline (308, Golf, Mégane) : multiplie par 1.2

@@ -261,7 +261,9 @@ export default function Home() {
       await new Promise((r) => setTimeout(r, minDelay));
 
       setResult(validated.data);
-      setBudget(validated.data.cout_total_max);
+      setBudget(Math.round((validated.data.cout_total_min + validated.data.cout_total_max) / 2));
+      // Pré-remplir le code postal depuis le CT
+      if (validated.data.code_postal) setCodePostal(validated.data.code_postal);
       setState("results");
     } catch {
       setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
@@ -751,7 +753,7 @@ export default function Home() {
                   onChange={(e) => setCodePostal(e.target.value.replace(/\D/g, "").slice(0, 5))}
                   autoComplete="postal-code" aria-label="Code postal"
                   className="w-20 text-center text-2xl font-extrabold bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-400 placeholder:text-lg mt-3" />
-                <p className="text-[11px] text-slate-400 mt-1.5">Affine les prix par région</p>
+                <p className="text-[11px] text-slate-400 mt-1.5">{result?.code_postal ? "Lu sur votre CT" : "Affine les prix par région"}</p>
                 {codePostal.length === 5 && result && (
                   <span className="text-[10px] text-muted mt-1">{getVehicleLabel(result.vehicule.marque)}</span>
                 )}

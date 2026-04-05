@@ -26,6 +26,7 @@ export const DefaillanceSchema = z.object({
 
 export const AnalyseResultSchema = z.object({
   vehicule: VehiculeSchema,
+  code_postal: z.string().optional().default(""),
   score_sante: z.number().min(0).max(100),
   defaillances: z.array(DefaillanceSchema),
   cout_total_min: z.number().min(0),

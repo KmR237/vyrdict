@@ -7,31 +7,46 @@ export function BudgetSimulator({ result, budget, onBudgetChange }: {
   budget: number;
   onBudgetChange: (value: number) => void;
 }) {
-  const { items, uncoveredMajeurs } = useMemo(() => {
+  const totalMoyen = useMemo(() => {
+    return result.defaillances.reduce((sum, d) => sum + (d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)), 0);
+  }, [result.defaillances]);
+
+  const { items, uncoveredMajeurs, coveredCount, totalCount } = useMemo(() => {
     const sorted = [...result.defaillances].sort(
-      (a, b) => a.priorite - b.priorite || b.cout_max - a.cout_max
+      (a, b) => a.priorite - b.priorite || (b.cout_moyen || (b.cout_min + b.cout_max) / 2) - (a.cout_moyen || (a.cout_min + a.cout_max) / 2)
     );
-    // Greedy: couvre chaque item si le budget restant le permet (même après un item trop cher)
     let spent = 0;
+    let coveredCount = 0;
     const items = sorted.map((d) => {
-      const covered = (spent + d.cout_max) <= budget;
-      if (covered) spent += d.cout_max;
+      const moyen = d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2);
+      const covered = (spent + moyen) <= budget;
+      if (covered) { spent += moyen; coveredCount++; }
       return { ...d, covered };
     });
     const uncoveredMajeurs = items.filter(
       (d) => !d.covered && (d.gravite === "majeur" || d.gravite === "critique")
     );
-    return { items, uncoveredMajeurs };
+    return { items, uncoveredMajeurs, coveredCount, totalCount: items.length };
   }, [result.defaillances, budget]);
+
+  const allMajeursCovered = uncoveredMajeurs.length === 0;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
-      <h2 className="font-bold text-lg mb-5">Simulateur de budget</h2>
+      <h2 className="font-bold text-lg mb-2">Simulateur de budget</h2>
+
+      {/* Résumé */}
+      <p className={`text-sm mb-5 ${allMajeursCovered ? "text-teal-700" : "text-amber-700"}`}>
+        {allMajeursCovered
+          ? `Avec ${budget.toLocaleString("fr-FR")} €, vous couvrez ${coveredCount} réparation${coveredCount > 1 ? "s" : ""} sur ${totalCount}, dont toutes les majeures.`
+          : `Avec ${budget.toLocaleString("fr-FR")} €, vous couvrez ${coveredCount} réparation${coveredCount > 1 ? "s" : ""} sur ${totalCount}. ${uncoveredMajeurs.length} majeure${uncoveredMajeurs.length > 1 ? "s" : ""} non couverte${uncoveredMajeurs.length > 1 ? "s" : ""}.`}
+      </p>
+
       <div className="flex items-center gap-4 mb-5">
         <input
           type="range" aria-label="Budget disponible"
           min={0}
-          max={result.cout_total_max + 200}
+          max={totalMoyen + 200}
           step={50}
           value={budget}
           onChange={(e) => onBudgetChange(parseInt(e.target.value))}
