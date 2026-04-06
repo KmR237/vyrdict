@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /dashboard/
+Disallow: /login
 
 Sitemap: https://vyrdict.fr/sitemap.xml
