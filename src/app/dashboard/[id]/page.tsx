@@ -188,7 +188,7 @@ export default function VehicleDetailPage() {
       </header>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
 
           {/* Colonne gauche — Analyse CT (order-2 sur mobile pour que la rentabilité soit en premier) */}
           <div className="lg:col-span-2 flex flex-col gap-5 order-2 lg:order-1">
