@@ -111,7 +111,6 @@ export default function Home() {
   const [showGauge, setShowGauge] = useState(false);
   const [apiReady, setApiReady] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -163,10 +162,6 @@ export default function Home() {
     }
   }, [state, result, isDemo, isSharedView]);
 
-  // Check if logged in
-  useEffect(() => {
-    setIsLoggedIn(document.cookie.includes("vyrdict-auth=authenticated"));
-  }, []);
 
   // Load shared result from URL
   useEffect(() => {
@@ -358,11 +353,6 @@ export default function Home() {
 
           {/* Right side */}
           <div className="flex items-center gap-2.5">
-            {isLoggedIn && (
-              <Link href="/dashboard" className="text-sm font-medium text-primary-dark hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100">
-                Dashboard
-              </Link>
-            )}
             {(state === "idle" || state === "dragging") && (
               <>
                 <a href="#faq" className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors">
