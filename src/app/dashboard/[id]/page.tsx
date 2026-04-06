@@ -93,6 +93,7 @@ export default function VehicleDetailPage() {
         setSourceAchat(data.source_achat || "");
         setDateAchat(data.date_achat || "");
         setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
+        setCustomPrices(data.custom_prices || {});
       }
       setLoading(false);
     })();
@@ -254,6 +255,7 @@ export default function VehicleDetailPage() {
                       <span className={`flex-1 text-sm font-medium ${d.selected ? "" : "line-through"}`}>{d.libelle}</span>
                       <input type="number" inputMode="numeric" value={customPrice ?? ""} placeholder={`~${estimation}`}
                         onChange={(e) => { e.stopPropagation(); setCustomPrices((p) => ({ ...p, [key]: e.target.value })); }}
+                        onBlur={() => save({ custom_prices: customPrices }, "Prix sauvegardé")}
                         onClick={(e) => e.stopPropagation()}
                         className="w-20 text-right text-sm font-bold tabular-nums bg-transparent border-b border-slate-200 focus:border-primary focus:outline-none transition-colors placeholder:text-muted placeholder:font-normal"
                         aria-label={`Prix ${d.libelle}`} />
@@ -291,6 +293,15 @@ export default function VehicleDetailPage() {
                 rows={3}
                 className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors resize-none" />
             </div>
+
+            {/* Supprimer */}
+            <button onClick={async () => {
+              if (!confirm("Supprimer ce véhicule ?")) return;
+              await fetch(`/api/dashboard/${id}`, { method: "DELETE" });
+              router.push("/dashboard");
+            }} className="text-xs text-muted hover:text-danger transition-colors cursor-pointer text-left">
+              Supprimer ce véhicule
+            </button>
           </div>
 
           {/* Colonne droite — Rentabilité (order-1 sur mobile = affiché en premier) */}

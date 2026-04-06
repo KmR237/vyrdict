@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
-
-function isAuthenticated(request: NextRequest): boolean {
-  return request.cookies.get("vyrdict-auth")?.value === "authenticated";
-}
+import { isAuthenticated } from "@/lib/auth";
 
 // GET — fiche véhicule
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -39,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     "statut", "prix_achat", "prix_revente", "frais_annexes",
     "devis_garage", "reparations_selectionnees", "mode_reparation",
     "notes", "devis_reel", "estimation_vyrdict",
-    "source_achat", "date_achat", "cout_stockage_jour", "prix_vente_reel", "photo_url",
+    "source_achat", "date_achat", "cout_stockage_jour", "prix_vente_reel", "photo_url", "custom_prices",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

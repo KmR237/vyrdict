@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
-
-function isAuthenticated(request: NextRequest): boolean {
-  return request.cookies.get("vyrdict-auth")?.value === "authenticated";
-}
+import { isAuthenticated } from "@/lib/auth";
 
 // GET — liste des véhicules
 export async function GET(request: NextRequest) {

@@ -146,20 +146,6 @@ export const REPAIR_COSTS: RepairCost[] = [
   { keywords: ["siège", "fixation", "glissière"], label: "Fixation / glissière de siège", cout_min: 60, cout_max: 180, cout_piece_min: 15, cout_piece_max: 60, cout_mo_min: 45, cout_mo_max: 120, peut_faire_soi_meme: false, source: "iDGarages" },
 ];
 
-function normalize(text: string): string {
-  return text.toLowerCase().replace(/[éèê]/g, "e").replace(/[àâ]/g, "a").replace(/[ûù]/g, "u").replace(/[ôö]/g, "o").replace(/[îï]/g, "i").replace(/ç/g, "c");
-}
-
-export function findRepairCost(libelle: string): RepairCost | null {
-  const normalized = normalize(libelle);
-  const scored = REPAIR_COSTS.map((repair) => {
-    const matchCount = repair.keywords.filter((kw) => normalized.includes(normalize(kw))).length;
-    return { repair, score: matchCount > 0 ? matchCount / repair.keywords.length : 0, matchCount };
-  });
-  const best = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score || b.matchCount - a.matchCount)[0];
-  return best?.repair ?? null;
-}
-
 // Génère le référentiel de prix pour le prompt Claude (avec pièce/MO)
 export function buildPriceReference(): string {
   return REPAIR_COSTS.map((r) => {
