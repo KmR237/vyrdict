@@ -136,7 +136,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Scanner CT — gros bouton, redirige vers page publique */}
-            <Link href="/"
+            <Link href="/dashboard/scan"
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-teal-500/20 transition-[transform,box-shadow]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -144,7 +144,7 @@ export default function DashboardPage() {
               Scanner un CT
             </Link>
 
-            <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
+            <Link href="/dashboard/scan" className="text-sm text-muted hover:text-foreground transition-colors">
               Site public
             </Link>
             <div className="relative">
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           <div className="text-center py-20">
             <p className="text-muted text-lg">{search ? "Aucun résultat" : "Aucun véhicule analysé"}</p>
             <p className="text-sm text-muted mt-1">Scannez un CT pour commencer</p>
-            <Link href="/"
+            <Link href="/dashboard/scan"
               className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
               Scanner un CT &rarr;
             </Link>

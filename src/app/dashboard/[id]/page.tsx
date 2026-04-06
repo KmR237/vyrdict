@@ -70,6 +70,8 @@ export default function VehicleDetailPage() {
   const [sourceAchat, setSourceAchat] = useState("");
   const [dateAchat, setDateAchat] = useState("");
   const [coutStockageJour, setCoutStockageJour] = useState("12");
+  const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
+  const [expandedDef, setExpandedDef] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -126,8 +128,13 @@ export default function VehicleDetailPage() {
 
   // Calculs de rentabilité
   const estimationSelectionnees = useMemo(() => {
-    return defaillances.filter((d) => d.selected).reduce((sum, d) => sum + (d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)), 0);
-  }, [defaillances]);
+    return defaillances.filter((d) => d.selected).reduce((sum, d, idx) => {
+      const key = `${d.code}-${idx}`;
+      const custom = customPrices[key];
+      const prix = custom ? (parseInt(custom) || 0) : (d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2));
+      return sum + prix;
+    }, 0);
+  }, [defaillances, customPrices]);
 
   const coutReparations = devisGarage ? parseFloat(devisGarage) : estimationSelectionnees;
   const achat = prixAchat ? parseFloat(prixAchat) : 0;
@@ -201,16 +208,43 @@ export default function VehicleDetailPage() {
 
             {/* Défaillances */}
             <div className="flex flex-col gap-2">
-              {defaillances.sort((a, b) => a.priorite - b.priorite).map((d, idx) => (
-                <label key={`${d.code}-${idx}`} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors cursor-pointer ${
-                  d.selected ? "bg-white border-slate-200/60 shadow-sm" : "bg-slate-50 border-transparent opacity-50"
-                }`}>
-                  <input type="checkbox" checked={d.selected} onChange={() => toggleDefaillance(d.code)} className="w-4 h-4 accent-primary rounded" />
-                  <GraviteBadge gravite={d.gravite} small />
-                  <span className={`flex-1 text-sm font-medium ${d.selected ? "" : "line-through"}`}>{d.libelle}</span>
-                  <span className="text-sm font-bold tabular-nums">~{(d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)).toLocaleString("fr-FR")} €</span>
-                </label>
-              ))}
+              {defaillances.sort((a, b) => a.priorite - b.priorite).map((d, idx) => {
+                const key = `${d.code}-${idx}`;
+                const estimation = d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2);
+                const customPrice = customPrices[key];
+                const displayPrice = customPrice ? parseInt(customPrice) || estimation : estimation;
+                const isExpanded = expandedDef === key;
+
+                return (
+                  <div key={key} className={`rounded-xl border transition-colors ${d.selected ? "bg-white border-slate-200/60 shadow-sm" : "bg-slate-50 border-transparent opacity-50"}`}>
+                    <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
+                      <input type="checkbox" checked={d.selected} onChange={() => toggleDefaillance(d.code)} className="w-4 h-4 accent-primary rounded shrink-0" />
+                      <GraviteBadge gravite={d.gravite} small />
+                      <span className={`flex-1 text-sm font-medium ${d.selected ? "" : "line-through"}`}>{d.libelle}</span>
+                      <input type="number" inputMode="numeric" value={customPrice ?? ""} placeholder={`~${estimation}`}
+                        onChange={(e) => { e.stopPropagation(); setCustomPrices((p) => ({ ...p, [key]: e.target.value })); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-20 text-right text-sm font-bold tabular-nums bg-transparent border-b border-slate-200 focus:border-primary focus:outline-none transition-colors placeholder:text-muted placeholder:font-normal"
+                        aria-label={`Prix ${d.libelle}`} />
+                      <span className="text-sm text-muted">€</span>
+                      <button onClick={(e) => { e.preventDefault(); setExpandedDef(isExpanded ? null : key); }}
+                        className="p-1 text-slate-300 hover:text-muted transition-colors cursor-pointer" aria-label="Détails">
+                        <svg className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </label>
+                    {isExpanded && (
+                      <div className="px-4 pb-3 pt-1 border-t border-slate-100 text-xs text-muted flex flex-col gap-1.5">
+                        <p className="text-sm text-slate-600">{d.description}</p>
+                        {d.cout_piece && <span className="px-2 py-0.5 bg-slate-50 rounded inline-block w-fit">{d.cout_piece}</span>}
+                        {d.cout_main_oeuvre && <span className="px-2 py-0.5 bg-slate-50 rounded inline-block w-fit">{d.cout_main_oeuvre}</span>}
+                        <span>Fourchette : {d.cout_min}-{d.cout_max} € — Estimation : ~{estimation} €</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex justify-between px-4 py-2 text-sm font-bold border-t border-slate-200/60 mt-1">
                 <span>Estimation sélection :</span>
                 <span className="tabular-nums">~{estimationSelectionnees.toLocaleString("fr-FR")} €</span>
