@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -49,20 +49,15 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getMarge(v: VehicleRow): number | null {
+function getMargeNette(v: VehicleRow): number | null {
   if (!v.prix_achat || !v.prix_revente) return null;
   const reparations = v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
   const stockDays = v.date_achat ? daysSince(v.date_achat) || 0 : 0;
   const coutStock = stockDays * (v.cout_stockage_jour || 0);
-  const margeBrute = v.prix_revente - v.prix_achat - reparations - v.frais_annexes - coutStock;
-  return margeBrute;
-}
-
-function getTVAMarge(v: VehicleRow): number | null {
-  if (!v.prix_achat || !v.prix_revente) return null;
-  const margeBrute = v.prix_revente - v.prix_achat;
-  if (margeBrute <= 0) return 0;
-  return Math.round(margeBrute * 0.2);
+  const margeBrute = v.prix_revente - v.prix_achat - reparations - (v.frais_annexes || 0) - coutStock;
+  // TVA sur marge (20% sur la différence revente - achat, si positive)
+  const tvaMarge = v.prix_revente > v.prix_achat ? Math.round((v.prix_revente - v.prix_achat) * 0.2) : 0;
+  return margeBrute - tvaMarge;
 }
 
 export default function DashboardPage() {
@@ -74,7 +69,6 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchVehicles = useCallback(async () => {
     const res = await fetch("/api/dashboard");
@@ -84,17 +78,7 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 
-  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    // Redirect to main page with file in session storage
-    const reader = new FileReader();
-    reader.onload = () => {
-      sessionStorage.setItem("pendingCTFile", JSON.stringify({ name: f.name, type: f.type, data: reader.result }));
-      router.push("/?scan=1");
-    };
-    reader.readAsDataURL(f);
-  }, [router]);
+  // Pas de upload ici — on redirige vers la page publique pour scanner
 
   const logout = async () => {
     await fetch("/api/auth", { method: "DELETE" });
@@ -114,7 +98,7 @@ export default function DashboardPage() {
       });
     }
     list = [...list].sort((a, b) => {
-      if (sortBy === "marge") return (getMarge(b) || -99999) - (getMarge(a) || -99999);
+      if (sortBy === "marge") return (getMargeNette(b) || -99999) - (getMargeNette(a) || -99999);
       if (sortBy === "score") return (b.analyses?.score_sante || 0) - (a.analyses?.score_sante || 0);
       if (sortBy === "stock") return (daysSince(b.date_achat) || 0) - (daysSince(a.date_achat) || 0);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -130,7 +114,7 @@ export default function DashboardPage() {
       total: vehicles.length,
       actifs: actifs.length,
       achetes: vehicles.filter((v) => ["achete", "en_reparation", "en_vente"].includes(v.statut)).length,
-      margeTotal: vendus.reduce((sum, v) => sum + (getMarge(v) || 0), 0),
+      margeTotal: vendus.reduce((sum, v) => sum + (getMargeNette(v) || 0), 0),
       alerteStock: actifs.filter((v) => v.date_achat && (daysSince(v.date_achat) || 0) > 45).length,
     };
   }, [vehicles]);
@@ -151,15 +135,14 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Scanner CT — gros bouton */}
-            <button onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-teal-500/20 transition-[transform,box-shadow] cursor-pointer">
+            {/* Scanner CT — gros bouton, redirige vers page publique */}
+            <Link href="/"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-teal-500/20 transition-[transform,box-shadow]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Scanner un CT
-            </button>
-            <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={handleUpload} className="hidden" />
+            </Link>
 
             <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
               Site public
@@ -248,10 +231,10 @@ export default function DashboardPage() {
           <div className="text-center py-20">
             <p className="text-muted text-lg">{search ? "Aucun résultat" : "Aucun véhicule analysé"}</p>
             <p className="text-sm text-muted mt-1">Scannez un CT pour commencer</p>
-            <button onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all cursor-pointer">
+            <Link href="/"
+              className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
               Scanner un CT &rarr;
-            </button>
+            </Link>
           </div>
         ) : viewMode === "table" ? (
           /* ─── VUE TABLEAU ─── */
@@ -271,9 +254,7 @@ export default function DashboardPage() {
                 {displayVehicles.map((v) => {
                   const a = v.analyses;
                   if (!a) return null;
-                  const marge = getMarge(v);
-                  const tva = getTVAMarge(v);
-                  const margeNette = marge !== null && tva !== null ? marge - tva : null;
+                  const margeNette = getMargeNette(v);
                   const days = daysSince(v.date_achat);
                   const statut = STATUTS[v.statut] || STATUTS.a_etudier;
 
@@ -319,9 +300,7 @@ export default function DashboardPage() {
             {displayVehicles.map((v) => {
               const a = v.analyses;
               if (!a) return null;
-              const marge = getMarge(v);
-              const tva = getTVAMarge(v);
-              const margeNette = marge !== null && tva !== null ? marge - tva : null;
+              const margeNette = getMargeNette(v);
               const days = daysSince(v.date_achat);
               const statut = STATUTS[v.statut] || STATUTS.a_etudier;
               const isAlerte = days !== null && days > 45;

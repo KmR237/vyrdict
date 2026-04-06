@@ -151,7 +151,11 @@ export default function VehicleDetailPage() {
       <header className="border-b border-slate-200/60 bg-white sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-muted hover:text-foreground transition-colors">&larr;</Link>
+            <Link href="/dashboard" className="text-sm text-muted hover:text-foreground transition-colors flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              Dashboard
+            </Link>
+            <span className="text-slate-200">|</span>
             <div>
               <h1 className="font-bold text-lg">{a.marque} {a.modele}</h1>
               <div className="flex items-center gap-2 text-xs text-muted">
@@ -170,8 +174,8 @@ export default function VehicleDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Colonne gauche — Analyse CT */}
-          <div className="lg:col-span-2 flex flex-col gap-5">
+          {/* Colonne gauche — Analyse CT (order-2 sur mobile pour que la rentabilité soit en premier) */}
+          <div className="lg:col-span-2 flex flex-col gap-5 order-2 lg:order-1">
             {/* Score + coût */}
             <div className="flex items-center gap-6 bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
               <ScoreGauge score={a.score_sante} size="sm" />
@@ -198,14 +202,14 @@ export default function VehicleDetailPage() {
             {/* Défaillances */}
             <div className="flex flex-col gap-2">
               {defaillances.sort((a, b) => a.priorite - b.priorite).map((d, idx) => (
-                <div key={`${d.code}-${idx}`} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors cursor-pointer ${
+                <label key={`${d.code}-${idx}`} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors cursor-pointer ${
                   d.selected ? "bg-white border-slate-200/60 shadow-sm" : "bg-slate-50 border-transparent opacity-50"
-                }`} onClick={() => toggleDefaillance(d.code)}>
-                  <input type="checkbox" checked={d.selected} readOnly className="w-4 h-4 accent-primary rounded" />
+                }`}>
+                  <input type="checkbox" checked={d.selected} onChange={() => toggleDefaillance(d.code)} className="w-4 h-4 accent-primary rounded" />
                   <GraviteBadge gravite={d.gravite} small />
                   <span className={`flex-1 text-sm font-medium ${d.selected ? "" : "line-through"}`}>{d.libelle}</span>
                   <span className="text-sm font-bold tabular-nums">~{(d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)).toLocaleString("fr-FR")} €</span>
-                </div>
+                </label>
               ))}
               <div className="flex justify-between px-4 py-2 text-sm font-bold border-t border-slate-200/60 mt-1">
                 <span>Estimation sélection :</span>
@@ -224,8 +228,8 @@ export default function VehicleDetailPage() {
             </div>
           </div>
 
-          {/* Colonne droite — Rentabilité */}
-          <div className="flex flex-col gap-5">
+          {/* Colonne droite — Rentabilité (order-1 sur mobile = affiché en premier) */}
+          <div className="flex flex-col gap-5 order-1 lg:order-2">
             {/* Statut pipeline */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">Statut</label>
