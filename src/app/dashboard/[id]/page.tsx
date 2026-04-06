@@ -75,6 +75,8 @@ export default function VehicleDetailPage() {
   const [coutStockageJour, setCoutStockageJour] = useState("12");
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
   const [expandedDef, setExpandedDef] = useState<string | null>(null);
+  const [lienAnnonce, setLienAnnonce] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
     (async () => {
@@ -94,6 +96,7 @@ export default function VehicleDetailPage() {
         setDateAchat(data.date_achat || "");
         setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
         setCustomPrices(data.custom_prices || {});
+        setLienAnnonce(data.lien_annonce || "");
       }
       setLoading(false);
     })();
@@ -101,13 +104,16 @@ export default function VehicleDetailPage() {
 
   const save = useCallback(async (updates: Record<string, unknown>, label?: string) => {
     setSaving(true);
+    setSaveStatus("saving");
     await fetch(`/api/dashboard/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
     setSaving(false);
+    setSaveStatus("saved");
     if (label) toast.show(label);
+    setTimeout(() => setSaveStatus("idle"), 2000);
   }, [id, toast]);
 
   const resultat = vehicle?.analyses?.resultat;
@@ -178,7 +184,9 @@ export default function VehicleDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">{saving ? "Sauvegarde..." : ""}</span>
+            <span className={`text-xs transition-colors ${saveStatus === "saving" ? "text-muted" : saveStatus === "saved" ? "text-teal-600" : "text-transparent"}`}>
+              {saveStatus === "saving" ? "Sauvegarde..." : saveStatus === "saved" ? "✓ Sauvegardé" : "."}
+            </span>
             <button onClick={() => window.print()} className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer no-print" aria-label="Exporter PDF">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
               Exporter PDF
@@ -430,6 +438,21 @@ export default function VehicleDetailPage() {
                     <option value="mandataire">Mandataire</option>
                     <option value="autre">Autre</option>
                   </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted">Lien annonce</label>
+                  <div className="flex gap-2 mt-1">
+                    <input type="url" value={lienAnnonce} onChange={(e) => setLienAnnonce(e.target.value)}
+                      onBlur={() => save({ lien_annonce: lienAnnonce })}
+                      placeholder="https://..."
+                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors" />
+                    {lienAnnonce && (
+                      <a href={lienAnnonce} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-primary hover:bg-teal-50 transition-colors flex items-center">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs text-muted">Date d&apos;achat</label>
