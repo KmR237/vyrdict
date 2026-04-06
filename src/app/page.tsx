@@ -12,6 +12,7 @@ import { BudgetSimulator } from "@/components/BudgetSimulator";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { EmailCapture } from "@/components/EmailCapture";
+import { NextSteps } from "@/components/NextSteps";
 import pako from "pako";
 
 type AppState = "idle" | "dragging" | "loading" | "results" | "error";
@@ -712,6 +713,9 @@ export default function Home() {
 
             <div className="animate-fade-up-delay-2"><VerdictBanner result={displayResult} /></div>
 
+            {/* Prochaine étape */}
+            <NextSteps result={displayResult} />
+
             {/* Defaillances */}
             <div className="flex flex-col gap-2.5 animate-fade-up-delay-3">
               <h2 className="font-bold text-lg">Défaillances</h2>
@@ -720,7 +724,9 @@ export default function Home() {
               ))}
             </div>
 
-            <BudgetSimulator result={displayResult} budget={budget} onBudgetChange={setBudget} />
+            <div id="budget" className="scroll-mt-20">
+              <BudgetSimulator result={displayResult} budget={budget} onBudgetChange={setBudget} />
+            </div>
 
             {/* Share */}
             {!isDemo && (
