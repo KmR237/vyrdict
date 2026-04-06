@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { AnalyseResult, Defaillance } from "@/lib/types";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GraviteBadge } from "@/components/GraviteBadge";
+import { useToast } from "@/components/Toast";
 
 const STATUTS = [
   { key: "a_etudier", label: "À étudier", color: "bg-slate-100 text-slate-600" },
@@ -34,6 +35,7 @@ interface VehicleData {
   date_achat: string | null;
   cout_stockage_jour: number;
   prix_vente_reel: number | null;
+  photo_url: string | null;
   analyses: {
     resultat: AnalyseResult;
     score_sante: number;
@@ -54,6 +56,7 @@ interface VehicleData {
 export default function VehicleDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [vehicle, setVehicle] = useState<VehicleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +98,7 @@ export default function VehicleDetailPage() {
     })();
   }, [id]);
 
-  const save = useCallback(async (updates: Record<string, unknown>) => {
+  const save = useCallback(async (updates: Record<string, unknown>, label?: string) => {
     setSaving(true);
     await fetch(`/api/dashboard/${id}`, {
       method: "PATCH",
@@ -103,7 +106,8 @@ export default function VehicleDetailPage() {
       body: JSON.stringify(updates),
     });
     setSaving(false);
-  }, [id]);
+    if (label) toast.show(label);
+  }, [id, toast]);
 
   const resultat = vehicle?.analyses?.resultat;
 
@@ -174,6 +178,10 @@ export default function VehicleDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">{saving ? "Sauvegarde..." : ""}</span>
+            <button onClick={() => window.print()} className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer no-print" aria-label="Exporter PDF">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Exporter PDF
+            </button>
           </div>
         </div>
       </header>
@@ -183,8 +191,31 @@ export default function VehicleDetailPage() {
 
           {/* Colonne gauche — Analyse CT (order-2 sur mobile pour que la rentabilité soit en premier) */}
           <div className="lg:col-span-2 flex flex-col gap-5 order-2 lg:order-1">
-            {/* Score + coût */}
-            <div className="flex items-center gap-6 bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
+            {/* Photo + Score + coût */}
+            <div className="flex items-center gap-4 bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
+              {/* Photo véhicule */}
+              <label className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 overflow-hidden">
+                {vehicle.photo_url ? (
+                  <img src={vehicle.photo_url} alt={`${a.marque} ${a.modele}`} className="w-full h-full object-cover" />
+                ) : (
+                  <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const reader = new FileReader();
+                  reader.onload = async () => {
+                    // Store as data URL (simple, no Supabase Storage needed for MVP)
+                    const dataUrl = reader.result as string;
+                    await save({ photo_url: dataUrl }, "Photo ajoutée");
+                    setVehicle((prev) => prev ? { ...prev, photo_url: dataUrl } : prev);
+                  };
+                  reader.readAsDataURL(f);
+                }} />
+              </label>
               <ScoreGauge score={a.score_sante} size="sm" />
               <div>
                 <p className="text-2xl font-black tabular-nums">~{Math.round((a.cout_total_min + a.cout_total_max) / 2).toLocaleString("fr-FR")} €</p>
@@ -269,7 +300,7 @@ export default function VehicleDetailPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">Statut</label>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {STATUTS.map((s) => (
-                  <button key={s.key} onClick={() => { setStatut(s.key); save({ statut: s.key }); }}
+                  <button key={s.key} onClick={() => { setStatut(s.key); save({ statut: s.key }, `Statut → ${s.label}`); }}
                     className={`text-[10px] px-2.5 py-1 rounded-full font-semibold transition-colors cursor-pointer ${statut === s.key ? s.color + " ring-2 ring-offset-1 ring-current" : "bg-slate-50 text-muted hover:bg-slate-100"}`}>
                     {s.label}
                   </button>

@@ -140,7 +140,11 @@ export default function ScanProPage() {
               </div>
               <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} className="hidden" aria-label="Sélectionner un fichier CT" />
             </label>
-            <p className="text-xs text-muted mt-4">Le véhicule sera automatiquement ajouté à votre dashboard.</p>
+            <button onClick={() => fileInputRef.current?.click()}
+              className="mt-4 px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium hover:bg-slate-50 transition-colors cursor-pointer">
+              Parcourir mes fichiers
+            </button>
+            <p className="text-xs text-muted mt-3">Le véhicule sera automatiquement ajouté à votre dashboard.</p>
           </>
         ) : state === "loading" ? (
           <div className="flex flex-col items-center gap-6 w-full">

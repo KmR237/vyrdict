@@ -134,22 +134,21 @@ export default function DashboardPage() {
               <p className="text-xs text-muted">Achat-revente</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Scanner CT — gros bouton, redirige vers page publique */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/dashboard/scan"
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-teal-500/20 transition-[transform,box-shadow]">
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-teal-500/20 transition-[transform,box-shadow]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Scanner un CT
+              <span className="hidden sm:inline">Scanner un CT</span>
+              <span className="sm:hidden">Scan</span>
             </Link>
-
-            <Link href="/dashboard/scan" className="text-sm text-muted hover:text-foreground transition-colors">
+            <Link href="/" className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors">
               Site public
             </Link>
             <div className="relative">
-              <button onClick={() => setShowLogoutConfirm(!showLogoutConfirm)} className="text-sm text-muted hover:text-danger transition-colors cursor-pointer">
-                Déconnexion
+              <button onClick={() => setShowLogoutConfirm(!showLogoutConfirm)} className="text-xs text-muted hover:text-danger transition-colors cursor-pointer p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
               </button>
               {showLogoutConfirm && (
                 <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-xl shadow-lg p-3 z-50 w-48">
