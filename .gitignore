@@ -52,3 +52,4 @@ playwright_*.mjs
 *.tsbuildinfo
 next-env.d.ts
 ct/
+test-results/
