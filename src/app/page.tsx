@@ -135,7 +135,7 @@ export default function Home() {
     const progressInterval = setInterval(() => {
       const elapsed = (Date.now() - startTime) / 1000;
       // Fast start, slow end: 1 - e^(-t/8) → approaches 100% asymptotically
-      const progress = Math.min(98, (1 - Math.exp(-elapsed / 8)) * 100);
+      const progress = Math.min(98, (1 - Math.exp(-elapsed / 14)) * 100);
       setLoadingProgress(progress);
     }, 100);
 
@@ -144,8 +144,8 @@ export default function Home() {
       setLoadingTip((t) => (t + 1) % LOADING_TIPS.length);
     }, 3000);
 
-    // Simulated defaillance counter
-    const defTimers = [3000, 5000, 6500, 8000, 10000].map((delay, idx) =>
+    // Simulated defaillance counter — étiré sur 20s pour garder du mouvement
+    const defTimers = [3000, 6000, 9000, 13000, 17000, 21000].map((delay, idx) =>
       setTimeout(() => setDefaillanceCount(idx + 1), delay)
     );
 
@@ -260,8 +260,9 @@ export default function Home() {
       const elapsed = Date.now() - startTime;
       const minDelay = Math.max(0, 4000 - elapsed);
 
-      setApiReady(true);
-      await new Promise((r) => setTimeout(r, minDelay));
+      // Snap barre à 100% avant d'afficher les résultats
+      setLoadingProgress(100);
+      await new Promise((r) => setTimeout(r, 400));
 
       setResult(validated.data);
       setBudget(Math.round((validated.data.cout_total_min + validated.data.cout_total_max) / 2));
