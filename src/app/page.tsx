@@ -19,13 +19,18 @@ type AppState = "idle" | "dragging" | "loading" | "results" | "error";
 const RATIO_REPARER = 0.35; // Coût < 35% de la cote → réparer
 const RATIO_VENDRE = 0.75;  // Coût > 75% de la cote → vendre
 
-// Les 3 premières phases sont cosmétiques (timing fixe)
-// La phase "Verdict" est synchronisée sur la réponse API
-const LOADING_PHASES = [
-  { label: "Lecture du document", duration: 1500, keywords: [] as string[] },
-  { label: "Détection des défaillances", duration: 2500, keywords: ["Freinage", "Éclairage", "Pneus", "Échappement", "Suspension"] },
-  { label: "Calcul des coûts", duration: 2000, keywords: ["Plaquettes", "Amortisseurs", "Catalyseur"] },
-  { label: "Finalisation du verdict", duration: 0, keywords: [] as string[] }, // durée 0 = attend l'API
+const LOADING_TIPS = [
+  "L'IA analyse votre document...",
+  "19% des CT sont défavorables en France",
+  "Les garages indépendants sont 25% moins chers en moyenne",
+  "Comparer 2-3 devis peut économiser 20-30%",
+  "Le freinage représente 30% des contre-visites",
+  "Identification des défaillances en cours...",
+  "Un CT coûte en moyenne 75€ en France",
+  "Vous avez 2 mois pour passer la contre-visite",
+  "Calcul des coûts de réparation...",
+  "Les pneus sont la 2e cause de contre-visite",
+  "Préparation de votre verdict...",
 ];
 
 function launchConfetti() {
@@ -105,10 +110,9 @@ export default function Home() {
   const [budget, setBudget] = useState(0);
   const [coteArgus, setCoteArgus] = useState("");
   const [codePostal, setCodePostal] = useState("");
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [detectedKeywords, setDetectedKeywords] = useState<string[]>([]);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingTip, setLoadingTip] = useState(0);
   const [defaillanceCount, setDefaillanceCount] = useState(0);
-  const [showGauge, setShowGauge] = useState(false);
   const [apiReady, setApiReady] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
@@ -120,38 +124,36 @@ export default function Home() {
   // Loading step animation
   useEffect(() => {
     if (state !== "loading") return;
-    setLoadingStep(0);
-    setDetectedKeywords([]);
+    setLoadingProgress(0);
+    setLoadingTip(0);
     setDefaillanceCount(0);
-    setShowGauge(false);
     setApiReady(false);
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let elapsed = 0;
+    const startTime = Date.now();
 
-    // Only schedule the first 3 phases (cosmetic, fixed timing)
-    LOADING_PHASES.forEach((phase, phaseIdx) => {
-      if (phase.duration === 0) return; // Skip "Verdict" phase — it's API-synced
+    // Logarithmic progress — never stops, slows down over time
+    const progressInterval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      // Fast start, slow end: 1 - e^(-t/8) → approaches 100% asymptotically
+      const progress = Math.min(98, (1 - Math.exp(-elapsed / 8)) * 100);
+      setLoadingProgress(progress);
+    }, 100);
 
-      timers.push(setTimeout(() => setLoadingStep(phaseIdx), elapsed));
+    // Rotate tips every 3 seconds
+    const tipInterval = setInterval(() => {
+      setLoadingTip((t) => (t + 1) % LOADING_TIPS.length);
+    }, 3000);
 
-      phase.keywords.forEach((kw, kwIdx) => {
-        timers.push(setTimeout(() => {
-          setDetectedKeywords((prev) => [...prev, kw]);
-          if (phaseIdx === 1) setDefaillanceCount((c) => c + 1);
-        }, elapsed + (kwIdx + 1) * (phase.duration / (phase.keywords.length + 1))));
-      });
+    // Simulated defaillance counter
+    const defTimers = [3000, 5000, 6500, 8000, 10000].map((delay, idx) =>
+      setTimeout(() => setDefaillanceCount(idx + 1), delay)
+    );
 
-      elapsed += phase.duration;
-    });
-
-    // After cosmetic phases: switch to "Verdict" phase + show gauge
-    timers.push(setTimeout(() => {
-      setLoadingStep(3);
-      setShowGauge(true);
-    }, elapsed));
-
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(tipInterval);
+      defTimers.forEach(clearTimeout);
+    };
   }, [state]);
 
   // Auto-scroll + confetti on results
@@ -562,132 +564,57 @@ export default function Home() {
 
         {/* ─── LOADING ─── */}
         {state === "loading" && (
-          <div className="max-w-4xl mx-auto px-4 py-16">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 sm:gap-12">
-              {/* Left: Document with scan effect */}
-              <div className="relative shrink-0">
-                <div className="w-40 h-52 sm:w-48 sm:h-64 rounded-2xl overflow-hidden shadow-xl border border-slate-200 bg-white">
-                  {preview ? (
-                    <img src={preview} alt="Aperçu du document" width={192} height={256} className="w-full h-full object-cover opacity-60" />
-                  ) : (
-                    <div className="w-full h-full bg-white p-4 flex flex-col gap-2" aria-hidden="true">
-                      {/* Stylized CT document illustration */}
-                      <div className="flex gap-1 h-2">
-                        <div className="flex-1 bg-blue-400 rounded-sm" />
-                        <div className="flex-1 bg-white rounded-sm" />
-                        <div className="flex-1 bg-red-400 rounded-sm" />
-                      </div>
-                      <div className="text-center mt-1">
-                        <p className="text-[8px] font-black text-slate-400 tracking-wider">CONTRÔLE TECHNIQUE</p>
-                        <p className="text-[6px] text-slate-300 mt-0.5">PROCÈS-VERBAL</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5 mt-2">
-                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-4/5" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-3/5" />
-                        <div className="h-1.5 bg-amber-100 rounded-full w-full" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-4/5" />
-                        <div className="h-1.5 bg-red-100 rounded-full w-full" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-2/3" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-full" />
-                        <div className="h-1.5 bg-amber-100 rounded-full w-4/5" />
-                      </div>
-                      <div className="mt-auto flex justify-between items-end">
-                        <div className="w-8 h-8 border border-slate-200 rounded" />
-                        <div className="h-1.5 bg-slate-100 rounded-full w-16" />
-                      </div>
+          <div className="max-w-lg mx-auto px-4 py-20 flex flex-col items-center gap-8">
+            {/* Document preview with scan */}
+            <div className="relative">
+              <div className="w-36 h-48 rounded-2xl overflow-hidden shadow-xl border border-slate-200 bg-white">
+                {preview ? (
+                  <img src={preview} alt="Aperçu" width={144} height={192} className="w-full h-full object-cover opacity-50" />
+                ) : (
+                  <div className="w-full h-full bg-white p-3 flex flex-col gap-1.5" aria-hidden="true">
+                    <div className="flex gap-0.5 h-1.5">
+                      <div className="flex-1 bg-blue-400 rounded-sm" />
+                      <div className="flex-1 bg-white" />
+                      <div className="flex-1 bg-red-400 rounded-sm" />
                     </div>
-                  )}
-                  {/* Scan line */}
-                  {loadingStep <= 1 && (
-                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-scan shadow-[0_0_8px_rgba(13,148,136,0.5)]" />
-                  )}
-                </div>
-                {/* Detected keywords floating around the document */}
-                <div className="absolute -right-2 -left-2 -top-2 -bottom-2 pointer-events-none">
-                  {detectedKeywords.map((kw, idx) => {
-                    const positions = [
-                      "top-0 -right-4 sm:-right-8",
-                      "top-1/4 -left-4 sm:-left-10",
-                      "top-1/2 -right-4 sm:-right-12",
-                      "top-2/3 -left-4 sm:-left-8",
-                      "bottom-4 -right-4 sm:-right-6",
-                      "bottom-0 -left-4 sm:-left-6",
-                      "top-1/3 -right-4 sm:-right-10",
-                      "bottom-1/4 -left-4 sm:-left-12",
-                    ];
-                    return (
-                      <span key={kw} className={`absolute ${positions[idx % positions.length]} px-2 py-0.5 bg-teal-50 text-primary text-[11px] font-semibold rounded-full border border-teal-200/50 shadow-sm animate-keyword-pop whitespace-nowrap`}
-                        style={{ animationDelay: `${idx * 0.15}s` }}>
-                        {kw}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right: Status + narrative */}
-              <div className="flex flex-col gap-6 flex-1 text-center sm:text-left">
-                {/* Current phase */}
-                <div>
-                  <p className="text-xs text-muted uppercase tracking-wider font-medium mb-1">
-                    {apiReady ? "Prêt" : "Analyse en cours"}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground transition-all duration-300">
-                    {apiReady ? "Votre verdict est prêt" : LOADING_PHASES[loadingStep]?.label}
-                  </p>
-                  <p className="text-sm text-muted mt-1">{file?.name}</p>
-                </div>
-
-                {/* Live counters */}
-                <div className="flex gap-6 justify-center sm:justify-start">
-                  {defaillanceCount > 0 && (
-                    <div className="animate-keyword-pop">
-                      <p className="text-3xl font-black text-amber-500 tabular-nums">{defaillanceCount}</p>
-                      <p className="text-xs text-muted">défaillance{defaillanceCount > 1 ? "s" : ""} détectée{defaillanceCount > 1 ? "s" : ""}</p>
-                    </div>
-                  )}
-                  {showGauge && (
-                    <div className="animate-blur-reveal">
-                      <div className="relative w-16 h-16">
-                        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                          <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="6" />
-                          <circle cx="50" cy="50" r="42" fill="none" stroke="#0d9488" strokeWidth="6" strokeLinecap="round"
-                            strokeDasharray="0 264" className="animate-gauge-build" />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-muted">?</span>
-                      </div>
-                      <p className="text-xs text-muted text-center mt-0.5">score</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Phase steps */}
-                <div className="flex flex-col gap-2">
-                  {LOADING_PHASES.map((phase, idx) => (
-                    <div key={idx} className={`flex items-center gap-2.5 text-sm transition-all duration-300 ${
-                      idx < loadingStep ? "text-teal-600" : idx === loadingStep ? "text-foreground font-medium" : "text-slate-200"
-                    }`}>
-                      {idx < loadingStep ? (
-                        <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                          <svg className="w-3 h-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                        </div>
-                      ) : idx === loadingStep ? (
-                        <div className="w-5 h-5 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                          <div className="w-2.5 h-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                        </div>
+                    <p className="text-[6px] font-black text-slate-300 text-center tracking-wider mt-1">CONTRÔLE TECHNIQUE</p>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {[100, 80, 100, 60, "amber", 80, "red", 65, 100, "amber"].map((w, i) =>
+                        <div key={i} className={`h-1 rounded-full ${typeof w === "string" ? (w === "amber" ? "bg-amber-200 w-full" : "bg-red-200 w-full") : "bg-slate-100"}`}
+                          style={typeof w === "number" ? { width: `${w}%` } : {}} />
                       )}
-                      <span>{phase.label}</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {/* Scan line — always active */}
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-scan shadow-[0_0_8px_rgba(13,148,136,0.5)]" />
               </div>
             </div>
+
+            {/* Progress bar — logarithmic, never stops */}
+            <div className="w-full">
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-200 ease-out"
+                  style={{ width: `${loadingProgress}%` }} />
+              </div>
+              <div className="flex justify-between mt-2">
+                <span className="text-xs text-muted">{file?.name}</span>
+                <span className="text-xs font-medium text-primary tabular-nums">{Math.round(loadingProgress)}%</span>
+              </div>
+            </div>
+
+            {/* Defaillance counter */}
+            {defaillanceCount > 0 && (
+              <div className="flex items-center gap-3 animate-fade-up">
+                <span className="text-3xl font-black text-amber-500 tabular-nums">{defaillanceCount}</span>
+                <span className="text-sm text-muted">défaillance{defaillanceCount > 1 ? "s" : ""} détectée{defaillanceCount > 1 ? "s" : ""}</span>
+              </div>
+            )}
+
+            {/* Rotating tips */}
+            <p className="text-sm text-muted text-center h-5 transition-opacity duration-500" key={loadingTip}>
+              {LOADING_TIPS[loadingTip]}
+            </p>
           </div>
         )}
 
