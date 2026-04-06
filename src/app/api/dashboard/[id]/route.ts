@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 
+function isAuthenticated(request: NextRequest): boolean {
+  return request.cookies.get("vyrdict-auth")?.value === "authenticated";
+}
+
 // GET — fiche véhicule
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isAuthenticated(_)) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   const { id } = await params;
   const supabase = createServerClient();
 
@@ -24,6 +29,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 // PATCH — mettre à jour un véhicule
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isAuthenticated(request)) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   const { id } = await params;
   const supabase = createServerClient();
   const body = await request.json();
@@ -56,6 +62,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 // DELETE — supprimer un véhicule
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isAuthenticated(_)) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   const { id } = await params;
   const supabase = createServerClient();
 

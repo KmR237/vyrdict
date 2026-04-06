@@ -265,6 +265,15 @@ export default function Home() {
       // Pré-remplir le code postal depuis le CT
       if (validated.data.code_postal) setCodePostal(validated.data.code_postal);
       setState("results");
+
+      // Sauvegarde auto dans le dashboard si connecté
+      try {
+        await fetch("/api/dashboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resultat: validated.data }),
+        });
+      } catch { /* silently fail if not logged in */ }
     } catch {
       setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
       setState("error");
