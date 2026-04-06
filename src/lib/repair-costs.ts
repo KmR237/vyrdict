@@ -146,10 +146,7 @@ export const REPAIR_COSTS: RepairCost[] = [
   { keywords: ["siège", "fixation", "glissière"], label: "Fixation / glissière de siège", cout_min: 60, cout_max: 180, cout_piece_min: 15, cout_piece_max: 60, cout_mo_min: 45, cout_mo_max: 120, peut_faire_soi_meme: false, source: "iDGarages" },
 ];
 
-// Génère le référentiel de prix pour le prompt Claude (avec pièce/MO)
+// Génère le référentiel de prix compact pour le prompt Claude (label: min-max seulement)
 export function buildPriceReference(): string {
-  return REPAIR_COSTS.map((r) => {
-    const mo = r.cout_mo_max > 0 ? ` (pièce: ${r.cout_piece_min}-${r.cout_piece_max}€, main-d'œuvre: ${r.cout_mo_min}-${r.cout_mo_max}€)` : "";
-    return `- ${r.label} : ${r.cout_min}-${r.cout_max}€${mo}`;
-  }).join("\n");
+  return REPAIR_COSTS.map((r) => `${r.label}:${r.cout_min}-${r.cout_max}`).join("|");
 }
