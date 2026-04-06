@@ -64,25 +64,30 @@ export default function ScanProPage() {
         return;
       }
 
-      // Minimum 3s d'animation
+      // Minimum 2s d'animation
       const elapsed = Date.now() - startTime;
-      await new Promise((r) => setTimeout(r, Math.max(0, 3000 - elapsed)));
+      await new Promise((r) => setTimeout(r, Math.max(0, 2000 - elapsed)));
 
-      // Sauvegarder dans le dashboard (avec le fichier CT)
-      const saveForm = new FormData();
-      saveForm.append("resultat", JSON.stringify(validated.data));
-      saveForm.append("ctFile", f);
+      // Sauvegarder en base SANS le fichier CT (rapide ~500ms)
       const saveRes = await fetch("/api/dashboard", {
         method: "POST",
-        body: saveForm,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resultat: validated.data }),
       });
 
       if (saveRes.ok) {
         const { vehicle_id } = await saveRes.json();
-        // Redirection vers la fiche du véhicule
+
+        // Upload du CT en arrière-plan (l'utilisateur est déjà redirigé)
+        const uploadForm = new FormData();
+        uploadForm.append("ctFile", f);
+        fetch(`/api/dashboard/${vehicle_id}/upload-ct`, {
+          method: "POST",
+          body: uploadForm,
+        }).catch(() => {}); // silently fail
+
         router.push(`/dashboard/${vehicle_id}`);
       } else {
-        // Fallback : retour au dashboard
         router.push("/dashboard");
       }
     } catch {
