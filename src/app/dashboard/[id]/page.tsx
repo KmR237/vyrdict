@@ -300,15 +300,18 @@ export default function VehicleDetailPage() {
               </div>
             </div>
 
-            {/* Notes */}
-            <div>
-              <label className="text-sm font-medium text-foreground">Notes personnelles</label>
+            {/* Notes — repliable */}
+            <details className="group">
+              <summary className="text-sm font-medium text-foreground cursor-pointer flex items-center justify-between py-2">
+                Notes personnelles {notes && <span className="text-xs text-muted font-normal">({notes.length} car.)</span>}
+                <svg className="w-4 h-4 text-slate-300 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </summary>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
                 onBlur={() => save({ notes })}
                 placeholder="Vendeur pressé, carrosserie impeccable, rayure portière droite..."
                 rows={3}
                 className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors resize-none" />
-            </div>
+            </details>
 
             {/* Supprimer */}
             <button onClick={async () => {

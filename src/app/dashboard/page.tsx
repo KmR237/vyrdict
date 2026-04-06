@@ -341,6 +341,25 @@ export default function DashboardPage() {
                   <span className="text-xs text-muted whitespace-nowrap">
                     {new Date(v.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                   </span>
+
+                  {/* Quick action — Passer */}
+                  {v.statut !== "passe" && v.statut !== "vendu" && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fetch(`/api/dashboard/${v.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ statut: "passe" }),
+                        }).then(() => fetchVehicles());
+                      }}
+                      className="text-[10px] px-2 py-1 rounded-lg bg-slate-100 text-muted hover:bg-red-50 hover:text-danger transition-colors cursor-pointer whitespace-nowrap"
+                      title="Marquer comme passé"
+                    >
+                      Passer
+                    </button>
+                  )}
                 </Link>
               );
             })}
