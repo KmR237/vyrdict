@@ -424,7 +424,7 @@ export default function Home() {
                 className={`w-full rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all duration-300 animate-fade-up-delay-2 ${
                   state === "dragging"
                     ? "border-2 border-primary bg-teal-50 scale-[1.02] shadow-xl shadow-teal-500/15 ring-4 ring-teal-100"
-                    : "border-2 border-dashed border-slate-300 bg-white hover:border-primary/40 hover:shadow-lg shadow-md"
+                    : "border-2 border-dashed border-slate-300/80 bg-white hover:border-primary hover:shadow-lg shadow-md hover:bg-teal-50/30"
                 }`}>
                 <div className="flex flex-col items-center gap-4">
                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${state === "dragging" ? "bg-teal-100 scale-110" : "bg-slate-50"}`}>
@@ -849,7 +849,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-slate-100 mt-auto bg-slate-50/80">
+      <footer className="border-t border-slate-200/60 mt-auto bg-slate-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {/* Brand */}

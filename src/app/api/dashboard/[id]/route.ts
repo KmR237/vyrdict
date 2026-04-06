@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 import { isAuthenticated } from "@/lib/auth";
+import { deleteFile } from "@/lib/storage";
 
 // GET — fiche véhicule
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -64,7 +65,20 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const supabase = createServerClient();
 
+  // Récupérer les URLs des fichiers avant suppression
+  const { data: vehicle } = await supabase.from("vehicles").select("photo_url, ct_file_url, analyse_id").eq("id", id).single();
+
+  // Supprimer les fichiers Storage
+  if (vehicle?.photo_url && vehicle.photo_url.includes("/storage/")) await deleteFile(vehicle.photo_url);
+  if (vehicle?.ct_file_url) await deleteFile(vehicle.ct_file_url);
+
+  // Supprimer le véhicule (cascade supprime l'analyse)
   const { error } = await supabase.from("vehicles").delete().eq("id", id);
+
+  // Supprimer l'analyse orpheline
+  if (vehicle?.analyse_id) {
+    await supabase.from("analyses").delete().eq("id", vehicle.analyse_id);
+  }
 
   if (error) {
     return NextResponse.json({ error: "Erreur de suppression." }, { status: 500 });

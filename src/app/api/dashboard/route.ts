@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 import { isAuthenticated } from "@/lib/auth";
+import { uploadFile } from "@/lib/storage";
 
 // GET — liste des véhicules
 export async function GET(request: NextRequest) {
@@ -12,11 +13,13 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from("vehicles")
     .select(`
-      *,
+      id, created_at, statut, prix_achat, prix_revente, devis_garage,
+      frais_annexes, estimation_vyrdict, devis_reel, date_achat,
+      cout_stockage_jour, source_achat, notes,
       analyses (
         marque, modele, immatriculation, annee, kilometrage,
         score_sante, cout_total_min, cout_total_max, verdict,
-        defaillances_count, code_postal, resultat
+        defaillances_count, code_postal, energie, puissance_fiscale
       )
     `)
     .order("created_at", { ascending: false });
@@ -37,8 +40,25 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
 
   try {
-    const body = await request.json();
-    const { resultat, fileHash } = body;
+    // Support both JSON and FormData
+    let resultat;
+    let ctFileUrl: string | null = null;
+
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      resultat = JSON.parse(formData.get("resultat") as string);
+
+      // Upload CT file to Supabase Storage
+      const ctFile = formData.get("ctFile") as File | null;
+      if (ctFile) {
+        const bytes = await ctFile.arrayBuffer();
+        ctFileUrl = await uploadFile(Buffer.from(bytes), ctFile.name, ctFile.type);
+      }
+    } else {
+      const body = await request.json();
+      resultat = body.resultat;
+    }
 
     // Sauvegarder l'analyse
     const { data: analyse, error: analyseError } = await supabase
@@ -58,7 +78,7 @@ export async function POST(request: NextRequest) {
         puissance_fiscale: resultat.puissance_fiscale || "",
         energie: resultat.energie || "",
         resultat,
-        file_hash: fileHash || null,
+        file_hash: null,
       })
       .select()
       .single();
@@ -76,6 +96,7 @@ export async function POST(request: NextRequest) {
         analyse_id: analyse.id,
         estimation_vyrdict: coutMoyen,
         frais_annexes: 350,
+        ct_file_url: ctFileUrl,
       })
       .select()
       .single();

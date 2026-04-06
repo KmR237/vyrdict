@@ -166,17 +166,17 @@ export default function DashboardPage() {
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
+        <div className="flex gap-3 mb-8 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { label: "Analysés", value: stats.total, color: "text-foreground" },
             { label: "En cours", value: stats.actifs, color: "text-blue-600" },
             { label: "Achetés", value: stats.achetes, color: "text-teal-600" },
-            { label: "Marge totale", value: `${stats.margeTotal.toLocaleString("fr-FR")} €`, color: stats.margeTotal >= 0 ? "text-emerald-600" : "text-danger" },
-            { label: "Alertes stock", value: stats.alerteStock, color: stats.alerteStock > 0 ? "text-danger" : "text-muted" },
+            { label: "Marge", value: `${stats.margeTotal.toLocaleString("fr-FR")} €`, color: stats.margeTotal >= 0 ? "text-emerald-600" : "text-danger" },
+            { label: "Alertes", value: stats.alerteStock, color: stats.alerteStock > 0 ? "text-danger" : "text-muted" },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+            <div key={s.label} className="bg-white rounded-xl border border-slate-200/60 px-4 py-3 shadow-sm shrink-0 min-w-[100px]">
               <p className="text-[10px] text-muted font-medium uppercase tracking-wider">{s.label}</p>
-              <p className={`text-xl font-black mt-1 tabular-nums ${s.color}`}>{s.value}</p>
+              <p className={`text-lg font-black mt-0.5 tabular-nums ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>

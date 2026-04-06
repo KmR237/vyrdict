@@ -68,11 +68,13 @@ export default function ScanProPage() {
       const elapsed = Date.now() - startTime;
       await new Promise((r) => setTimeout(r, Math.max(0, 3000 - elapsed)));
 
-      // Sauvegarder dans le dashboard
+      // Sauvegarder dans le dashboard (avec le fichier CT)
+      const saveForm = new FormData();
+      saveForm.append("resultat", JSON.stringify(validated.data));
+      saveForm.append("ctFile", f);
       const saveRes = await fetch("/api/dashboard", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resultat: validated.data }),
+        body: saveForm,
       });
 
       if (saveRes.ok) {
