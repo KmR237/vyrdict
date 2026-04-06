@@ -9,6 +9,8 @@ export const DEMO_RESULT: AnalyseResult = {
     kilometrage: 98450,
   },
   code_postal: "40100",
+  puissance_fiscale: "5",
+  energie: "essence",
   score_sante: 62,
   defaillances: [
     {

@@ -25,6 +25,8 @@ Analyse le document et retourne UNIQUEMENT un JSON valide (sans markdown, sans b
     "kilometrage": number
   },
   "code_postal": "string (code postal du centre de contrôle technique, lu sur le PV, ex: '40100')",
+  "puissance_fiscale": "string (puissance fiscale en CV, lue sur le PV, ex: '5')",
+  "energie": "string (type d'énergie/carburant lu sur le PV, ex: 'essence', 'diesel', 'hybride', 'electrique')",
   "score_sante": number,
   "defaillances": [
     {

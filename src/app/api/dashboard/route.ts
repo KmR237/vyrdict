@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
         cout_total_max: resultat.cout_total_max,
         verdict: resultat.verdict,
         defaillances_count: resultat.defaillances.length,
+        puissance_fiscale: resultat.puissance_fiscale || "",
+        energie: resultat.energie || "",
         resultat,
         file_hash: fileHash || null,
       })
