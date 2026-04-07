@@ -146,9 +146,9 @@ export default function VehicleDetailPage() {
 
   const toggleDefaillance = (code: string) => {
     setModeReparation("personnalise");
-    setSelectedCodes((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
+    const newCodes = selectedCodes.includes(code) ? selectedCodes.filter((c) => c !== code) : [...selectedCodes, code];
+    setSelectedCodes(newCodes);
+    save({ mode_reparation: "personnalise", reparations_selectionnees: newCodes });
   };
 
   // Calculs de rentabilité
@@ -183,10 +183,10 @@ export default function VehicleDetailPage() {
     ? calcAuctionFees(sourceKey, plafondAdjudication, fraisEncherePct ? parseFloat(fraisEncherePct) : undefined, fraisEnchereFixes ? parseFloat(fraisEnchereFixes) : undefined)
     : 0;
 
-  // Sauver le total réparations pour synchroniser avec la liste
+  // Sauver le total réparations + estimation pour synchroniser avec la liste
   useEffect(() => {
-    if (coutReparations > 0 && vehicle) {
-      save({ devis_garage: coutReparations });
+    if (vehicle && estimationSelectionnees > 0 && !devisGarage) {
+      save({ estimation_vyrdict: estimationSelectionnees });
     }
   }, [coutReparations]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -294,7 +294,7 @@ export default function VehicleDetailPage() {
                 { key: "complet", label: "Complet" },
                 { key: "personnalise", label: "Personnalisé" },
               ].map((m) => (
-                <button key={m.key} onClick={() => { setModeReparation(m.key); }}
+                <button key={m.key} onClick={() => { setModeReparation(m.key); save({ mode_reparation: m.key }); }}
                   className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${modeReparation === m.key ? "bg-teal-600 text-white" : "bg-slate-100 text-muted hover:bg-slate-200"}`}>
                   {m.label}
                 </button>
