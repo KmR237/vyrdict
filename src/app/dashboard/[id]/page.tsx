@@ -416,7 +416,13 @@ export default function VehicleDetailPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted">Prix de revente visé</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted">Prix de revente visé</label>
+                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-primary hover:underline font-medium">
+                      Cote LaCentrale &rarr;
+                    </a>
+                  </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixRevente}
                       onChange={(e) => setPrixRevente(e.target.value)}
