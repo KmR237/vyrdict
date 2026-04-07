@@ -481,7 +481,7 @@ export default function VehicleDetailPage() {
               {/* TVA */}
               <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { setTvaSurMarge(e.target.checked); save({ tva_sur_marge: e.target.checked }); }}
+                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val === true }, val ? "TVA activée" : "TVA désactivée"); }}
                     className="w-4 h-4 accent-primary rounded" />
                   <span className="text-xs text-muted">TVA sur marge (20%)</span>
                 </label>
