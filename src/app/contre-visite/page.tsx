@@ -181,7 +181,7 @@ export default function ContreVisite() {
                 </div>
               </div>
               <p className="mt-4">
-                Pour connaître la cote de votre véhicule, consultez <a href="https://www.lacentrale.fr/cote-auto.html" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">LaCentrale</a> ou <a href="https://www.autoscout24.fr" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">AutoScout24</a>.
+                Pour connaître la cote de votre véhicule, consultez <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">LaCentrale</a> ou <a href="https://www.autoscout24.fr" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">AutoScout24</a>.
               </p>
             </section>
           </div>

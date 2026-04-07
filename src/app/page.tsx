@@ -721,7 +721,7 @@ export default function Home() {
                   <span className="text-2xl font-extrabold text-slate-400">&euro;</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1.5">Affine le verdict</p>
-                <a href="https://www.lacentrale.fr/cote-auto.html" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1.5 font-medium">
+                <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1.5 font-medium">
                   LaCentrale &rarr;
                 </a>
               </div>

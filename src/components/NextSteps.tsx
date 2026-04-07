@@ -16,7 +16,7 @@ export function NextSteps({ result }: { result: AnalyseResult }) {
         <ol className="flex flex-col gap-2.5">
           <li className="flex items-start gap-3 text-sm">
             <span className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-xs font-bold text-red-600 shrink-0">1</span>
-            <span>Estimez la cote de votre véhicule sur <a href="https://www.lacentrale.fr/cote-auto.html" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">LaCentrale</a></span>
+            <span>Estimez la cote de votre véhicule sur <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">LaCentrale</a></span>
           </li>
           <li className="flex items-start gap-3 text-sm">
             <span className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-xs font-bold text-red-600 shrink-0">2</span>
