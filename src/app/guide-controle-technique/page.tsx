@@ -36,7 +36,7 @@ export default function GuideControleTechnique() {
 
           <div className="mt-8 p-5 bg-teal-50 rounded-2xl border border-teal-200/50">
             <p className="text-sm font-semibold text-primary-dark">Vous avez déjà votre résultat de CT ?</p>
-            <p className="text-sm text-muted mt-1">Déposez votre procès-verbal sur Vyrdict pour obtenir une estimation des coûts de réparation en 10 secondes.</p>
+            <p className="text-sm text-muted mt-1">Déposez votre procès-verbal sur Vyrdict pour obtenir une estimation des coûts de réparation en quelques secondes.</p>
             <Link href="/" className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-primary-dark hover:text-primary transition-colors">
               Analyser mon CT &rarr;
             </Link>

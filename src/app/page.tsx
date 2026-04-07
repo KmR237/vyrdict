@@ -397,7 +397,7 @@ export default function Home() {
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] [text-wrap:balance] animate-fade-up-delay-1">
                 Votre contrôle technique<br />
-                <span className="highlight-marker">décrypté en 10 secondes</span>
+                <span className="highlight-marker">décrypté en quelques secondes</span>
               </h1>
               <p className="mt-5 text-muted max-w-lg mx-auto text-base sm:text-lg leading-relaxed animate-fade-up-delay-2">
                 Déposez votre procès-verbal et obtenez le coût des réparations, un score de santé et un verdict clair.
@@ -473,7 +473,7 @@ export default function Home() {
                 {[
                   { icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z", text: "Données non conservées" },
                   { icon: "M5 13l4 4L19 7", text: "100% gratuit" },
-                  { icon: "M13 10V3L4 14h7v7l9-11h-7z", text: "Résultat en 10 sec" },
+                  { icon: "M13 10V3L4 14h7v7l9-11h-7z", text: "Résultat rapide" },
                 ].map((t) => (
                   <span key={t.text} className="flex items-center gap-1.5">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -514,8 +514,8 @@ export default function Home() {
                     <div className="flex items-center gap-3">
                       <span className="text-xl">&#9989;</span>
                       <div>
-                        <p className="font-bold">Verdict : Réparer</p>
-                        <p className="text-xs text-green-700 mt-0.5">Le coût total reste raisonnable pour ce véhicule.</p>
+                        <p className="font-bold text-lg">Verdict : Réparer</p>
+                        <p className="text-sm text-green-700 mt-0.5">Le coût total reste raisonnable pour ce véhicule.</p>
                       </div>
                     </div>
                   </div>
@@ -744,7 +744,22 @@ export default function Home() {
               <BudgetSimulator result={displayResult} budget={budget} onBudgetChange={setBudget} />
             </div>
 
-            {/* Share */}
+            {/* Conseils */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
+              <h2 className="font-bold text-lg mb-4">Conseils personnalisés</h2>
+              <ul className="flex flex-col gap-3">
+                {displayResult.conseils.map((c, idx) => (
+                  <li key={idx} className="flex items-start gap-3 text-sm">
+                    <div className="w-6 h-6 rounded-lg bg-teal-50 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <span className="leading-relaxed">{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Partage + Email — en dernier */}
             {!isDemo && (
               <div className="bg-gradient-to-br from-slate-50 to-teal-50/30 rounded-2xl border border-slate-200/60 p-5 sm:p-6">
                 <h2 className="font-bold text-lg mb-2">Partager ce rapport</h2>
@@ -766,26 +781,10 @@ export default function Home() {
               </div>
             )}
 
-            {/* Email capture */}
             {!isDemo && <EmailCapture result={displayResult} shareUrl={getShareUrl()} />}
 
-            {/* Conseils */}
-            <div className="bg-white rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
-              <h2 className="font-bold text-lg mb-4">Conseils personnalisés</h2>
-              <ul className="flex flex-col gap-3">
-                {displayResult.conseils.map((c, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <span className="leading-relaxed">{c}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <p className="text-[11px] text-slate-400 text-center py-2 leading-relaxed">
-              Estimations indicatives basées sur les tarifs moyens en France 2025-2026 (sources professionnelles du secteur automobile). Demandez des devis professionnels avant toute intervention.
+              Estimations indicatives basées sur les tarifs moyens en France 2025-2026. Demandez des devis professionnels avant toute intervention.
             </p>
 
             <div className="flex justify-center gap-3 pb-8 no-print">
@@ -810,7 +809,7 @@ export default function Home() {
                 </div>
                 <span className="font-bold text-foreground">Vyrdict</span>
               </div>
-              <p className="text-sm text-muted leading-relaxed">Analyseur de contrôle technique par IA. Estimez vos coûts de réparation en 10 secondes.</p>
+              <p className="text-sm text-muted leading-relaxed">Analyseur de contrôle technique par IA. Estimez vos coûts de réparation en quelques secondes.</p>
               <Link href="/" className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-primary-dark hover:text-primary transition-colors">
                 Analyser mon CT &rarr;
               </Link>

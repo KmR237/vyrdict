@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: { icon: "/favicon.svg", apple: "/icon-192.png" },
   openGraph: {
-    title: "Vyrdict — Votre contrôle technique décrypté en 10 secondes",
+    title: "Vyrdict — Votre contrôle technique décrypté en quelques secondes",
     description: "Déposez votre procès-verbal de contrôle technique et obtenez le coût des réparations, un score de santé et un verdict clair. Gratuit et sans inscription.",
     type: "website",
     locale: "fr_FR",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vyrdict — Votre contrôle technique décrypté en 10 secondes",
+    title: "Vyrdict — Votre contrôle technique décrypté en quelques secondes",
     description: "Estimation des coûts de réparation, score de santé véhicule et verdict réparer ou vendre. Gratuit.",
     images: ["/og-image.png"],
   },
