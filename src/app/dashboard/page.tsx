@@ -83,9 +83,12 @@ function getPlafond(v: VehicleRow): number | null {
   if (!v.prix_revente) return null;
   const rep = v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
   const frais = v.frais_annexes || 350;
-  const tva = (v.tva_sur_marge !== false) && v.prix_revente > 0 ? Math.round(v.prix_revente * 0.2) : 0; // estimate
   const margeMin = v.marge_minimum || 500;
-  const budget = v.prix_revente - rep - frais - tva - margeMin;
+  const achat = v.prix_achat || 0;
+  // TVA sur marge = 20% × (revente - achat), uniquement si TVA active et revente > achat
+  const tvaMarge = (v.tva_sur_marge !== false) && v.prix_revente > achat && achat > 0
+    ? Math.round((v.prix_revente - achat) * 0.2) : 0;
+  const budget = v.prix_revente - rep - frais - margeMin - tvaMarge;
   if (budget <= 0) return null;
   const sourceKey = v.source_achat === "alcopa" ? "alcopa_ligne" : v.source_achat;
   return calcMaxAdjudication(budget, sourceKey || "particulier");
