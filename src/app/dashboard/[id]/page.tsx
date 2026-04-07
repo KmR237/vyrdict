@@ -78,6 +78,7 @@ export default function VehicleDetailPage() {
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
   const [expandedDef, setExpandedDef] = useState<string | null>(null);
   const [lienAnnonce, setLienAnnonce] = useState("");
+  const [dateEnchere, setDateEnchere] = useState("");
   const [tvaSurMarge, setTvaSurMarge] = useState(true);
   const [margeMinimum, setMargeMinimum] = useState("500");
   const [modeEnchere, setModeEnchere] = useState("en_ligne");
@@ -104,6 +105,7 @@ export default function VehicleDetailPage() {
         setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
         setCustomPrices(data.custom_prices || {});
         setLienAnnonce(data.lien_annonce || "");
+        setDateEnchere(data.date_enchere ? new Date(data.date_enchere).toISOString().slice(0, 16) : "");
         setTvaSurMarge(data.tva_sur_marge ?? true);
         setMargeMinimum(data.marge_minimum?.toString() || "500");
         setModeEnchere(data.mode_enchere || "en_ligne");
@@ -542,6 +544,14 @@ export default function VehicleDetailPage() {
                     </p>
                   )}
                 </div>
+                {["a_etudier", "a_negocier", "offre_faite", ""].includes(statut) && (
+                  <div>
+                    <label className="text-xs text-muted">Date enchère</label>
+                    <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
+                      onBlur={() => save({ date_enchere: dateEnchere || null })}
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
+                  </div>
+                )}
                 <div>
                   <label className="text-xs text-muted">Lien annonce</label>
                   <div className="flex gap-2 mt-1">

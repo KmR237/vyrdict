@@ -18,6 +18,7 @@ interface VehicleRow {
   cout_stockage_jour: number;
   source_achat: string;
   notes: string;
+  date_enchere: string | null;
   analyses: {
     marque: string;
     modele: string;
@@ -44,6 +45,34 @@ const STATUTS: Record<string, { label: string; color: string; border: string }> 
   passe: { label: "Passé", color: "bg-stone-100 text-stone-500", border: "border-l-stone-300" },
 };
 
+const STATUT_ORDER: Record<string, number> = {
+  a_etudier: 0, a_negocier: 1, offre_faite: 2,
+  achete: 3, en_reparation: 4, en_vente: 5,
+  vendu: 6, passe: 7,
+};
+
+function getEnchereBadge(dateStr: string | null): { label: string; color: string } | null {
+  if (!dateStr) return null;
+  const now = new Date();
+  const date = new Date(dateStr);
+  if (date < now) return null; // passée
+  const diffMs = date.getTime() - now.getTime();
+  const diffH = diffMs / (1000 * 60 * 60);
+  if (diffH < 0) return null;
+  if (diffH < 24) {
+    const h = date.getHours().toString().padStart(2, "0");
+    const m = date.getMinutes().toString().padStart(2, "0");
+    return { label: `Aujourd'hui ${h}h${m}`, color: "bg-red-100 text-red-700" };
+  }
+  if (diffH < 48) return { label: "Demain", color: "bg-amber-100 text-amber-700" };
+  if (diffH < 168) {
+    const jour = date.toLocaleDateString("fr-FR", { weekday: "short" });
+    const h = date.getHours().toString().padStart(2, "0");
+    return { label: `${jour} ${h}h`, color: "bg-blue-100 text-blue-700" };
+  }
+  return { label: date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }), color: "bg-slate-100 text-muted" };
+}
+
 function daysSince(dateStr: string | null): number | null {
   if (!dateStr) return null;
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
@@ -64,7 +93,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"date" | "marge" | "score" | "stock">("date");
+  const [sortBy, setSortBy] = useState<"statut" | "date" | "marge" | "score" | "stock" | "enchere">("statut");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
 
@@ -102,6 +131,16 @@ export default function DashboardPage() {
       });
     }
     return [...list].sort((a, b) => {
+      if (sortBy === "statut") {
+        const orderDiff = (STATUT_ORDER[a.statut] ?? 99) - (STATUT_ORDER[b.statut] ?? 99);
+        if (orderDiff !== 0) return orderDiff;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (sortBy === "enchere") {
+        const aDate = a.date_enchere ? new Date(a.date_enchere).getTime() : Infinity;
+        const bDate = b.date_enchere ? new Date(b.date_enchere).getTime() : Infinity;
+        return aDate - bDate;
+      }
       if (sortBy === "marge") return (getMargeNette(b) || -99999) - (getMargeNette(a) || -99999);
       if (sortBy === "score") return (b.analyses?.score_sante || 0) - (a.analyses?.score_sante || 0);
       if (sortBy === "stock") return (daysSince(b.date_achat) || 0) - (daysSince(a.date_achat) || 0);
@@ -235,6 +274,8 @@ export default function DashboardPage() {
             className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:border-primary focus:outline-none transition-colors" />
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white cursor-pointer">
+            <option value="statut">Par statut</option>
+            <option value="enchere">Prochaine enchère</option>
             <option value="date">Plus récent</option>
             <option value="marge">Meilleure marge</option>
             <option value="score">Score santé</option>
@@ -334,7 +375,17 @@ export default function DashboardPage() {
                         ) : <span className="text-muted text-xs">—</span>}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${statut.color}`}>{statut.label}</span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold w-fit ${statut.color}`}>{statut.label}</span>
+                          {(() => {
+                            const badge = getEnchereBadge(v.date_enchere);
+                            return badge ? (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold w-fit ${badge.color}`}>
+                                {badge.label}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
                       </td>
                       <td className="px-3 py-3">
                         {v.statut !== "passe" && v.statut !== "vendu" && (
