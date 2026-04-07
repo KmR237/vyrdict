@@ -109,9 +109,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 422 });
     }
 
+    // Normaliser la gravité (Claude peut retourner "majeure" au lieu de "majeur")
+    if (parsed.defaillances && Array.isArray(parsed.defaillances)) {
+      for (const d of parsed.defaillances) {
+        if (d.gravite) {
+          const g = d.gravite.toLowerCase().trim();
+          if (g === "majeure" || g === "majeures") d.gravite = "majeur";
+          else if (g === "mineure" || g === "mineures") d.gravite = "mineur";
+          else if (g === "critiques") d.gravite = "critique";
+          else d.gravite = g;
+        }
+      }
+    }
+
     const validated = AnalyseResultSchema.safeParse(parsed);
     if (!validated.success) {
-      console.error("Validation error:", validated.error.issues);
+      console.error("Validation error:", JSON.stringify(validated.error.issues, null, 2));
       return NextResponse.json(
         { error: "L'IA n'a pas pu analyser ce document correctement. Réessayez avec une photo plus nette." },
         { status: 500 }
