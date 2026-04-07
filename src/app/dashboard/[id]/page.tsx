@@ -7,6 +7,7 @@ import type { AnalyseResult, Defaillance } from "@/lib/types";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GraviteBadge } from "@/components/GraviteBadge";
 import { useToast } from "@/components/Toast";
+import { AUCTION_SOURCES, calcMaxAdjudication, calcAuctionFees } from "@/lib/auction-fees";
 
 const STATUTS = [
   { key: "a_etudier", label: "À étudier", color: "bg-slate-100 text-slate-600" },
@@ -77,6 +78,11 @@ export default function VehicleDetailPage() {
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
   const [expandedDef, setExpandedDef] = useState<string | null>(null);
   const [lienAnnonce, setLienAnnonce] = useState("");
+  const [tvaSurMarge, setTvaSurMarge] = useState(true);
+  const [margeMinimum, setMargeMinimum] = useState("500");
+  const [modeEnchere, setModeEnchere] = useState("en_ligne");
+  const [fraisEncherePct, setFraisEncherePct] = useState<string>("");
+  const [fraisEnchereFixes, setFraisEnchereFixes] = useState<string>("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
@@ -98,6 +104,11 @@ export default function VehicleDetailPage() {
         setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
         setCustomPrices(data.custom_prices || {});
         setLienAnnonce(data.lien_annonce || "");
+        setTvaSurMarge(data.tva_sur_marge ?? true);
+        setMargeMinimum(data.marge_minimum?.toString() || "500");
+        setModeEnchere(data.mode_enchere || "en_ligne");
+        if (data.frais_enchere_pct !== null && data.frais_enchere_pct !== undefined) setFraisEncherePct(data.frais_enchere_pct.toString());
+        if (data.frais_enchere_fixes !== null && data.frais_enchere_fixes !== undefined) setFraisEnchereFixes(data.frais_enchere_fixes.toString());
       }
       setLoading(false);
     })();
@@ -154,11 +165,28 @@ export default function VehicleDetailPage() {
   const frais = fraisAnnexes ? parseFloat(fraisAnnexes) : 350;
   const joursStock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const coutStock = joursStock * (parseFloat(coutStockageJour) || 0);
+  const tvaMarge = tvaSurMarge && revente > 0 && achat > 0 && revente > achat ? Math.round((revente - achat) * 0.2) : 0;
   const margeBrute = revente > 0 && achat > 0 ? revente - achat - coutReparations - frais - coutStock : null;
-  const tvaMarge = revente > 0 && achat > 0 && revente > achat ? Math.round((revente - achat) * 0.2) : 0;
   const margeNette = margeBrute !== null ? margeBrute - tvaMarge : null;
   const rendement = margeNette !== null && achat > 0 ? Math.round((margeNette / achat) * 100) : null;
-  const plafondEnchere = revente > 0 ? revente - coutReparations - frais - tvaMarge : null;
+
+  // Plafond d'adjudication avec marge minimum + frais enchère
+  const margeMin = parseFloat(margeMinimum) || 0;
+  const sourceKey = sourceAchat === "alcopa" ? `alcopa_${modeEnchere}` : sourceAchat;
+  const budgetMax = revente > 0 ? revente - coutReparations - frais - tvaMarge - margeMin : null;
+  const plafondAdjudication = budgetMax !== null && budgetMax > 0
+    ? calcMaxAdjudication(budgetMax, sourceKey, fraisEncherePct ? parseFloat(fraisEncherePct) : undefined, fraisEnchereFixes ? parseFloat(fraisEnchereFixes) : undefined)
+    : null;
+  const fraisEnchereEstimes = plafondAdjudication !== null
+    ? calcAuctionFees(sourceKey, plafondAdjudication, fraisEncherePct ? parseFloat(fraisEncherePct) : undefined, fraisEnchereFixes ? parseFloat(fraisEnchereFixes) : undefined)
+    : 0;
+
+  // Sauver le total réparations pour synchroniser avec la liste
+  useEffect(() => {
+    if (coutReparations > 0 && vehicle) {
+      save({ devis_garage: coutReparations });
+    }
+  }, [coutReparations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="min-h-full flex items-center justify-center text-muted">Chargement...</div>;
   if (!vehicle || !resultat) return <div className="min-h-full flex items-center justify-center text-danger">Véhicule non trouvé</div>;
@@ -425,10 +453,38 @@ export default function VehicleDetailPage() {
                 </div>
               )}
 
-              {plafondEnchere !== null && plafondEnchere > 0 && (
-                <div className="mt-3 p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-muted">Enchérir max (TVA incluse) :</p>
-                  <p className="text-lg font-black tabular-nums text-foreground">{Math.round(plafondEnchere).toLocaleString("fr-FR")} €</p>
+              {/* TVA + Marge minimum */}
+              <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { setTvaSurMarge(e.target.checked); save({ tva_sur_marge: e.target.checked }); }}
+                    className="w-4 h-4 accent-primary rounded" />
+                  <span className="text-xs text-muted">TVA sur marge (20%)</span>
+                </label>
+                <div>
+                  <label className="text-xs text-muted">Marge minimum souhaitée</label>
+                  <div className="flex items-center gap-1 mt-1">
+                    <input type="number" inputMode="numeric" value={margeMinimum}
+                      onChange={(e) => setMargeMinimum(e.target.value)}
+                      onBlur={() => save({ marge_minimum: parseFloat(margeMinimum) || 0 })}
+                      placeholder="500"
+                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
+                    <span className="text-sm text-muted">€</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Plafond d'adjudication */}
+              {plafondAdjudication !== null && plafondAdjudication > 0 && (
+                <div className="mt-3 p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-xl">
+                  <p className="text-xs text-muted mb-1">Enchérir max (adjudication) :</p>
+                  <p className="text-2xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
+                  {fraisEnchereEstimes > 0 && (
+                    <p className="text-[10px] text-muted mt-1">
+                      Frais enchère estimés : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
+                      {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted">Marge minimum : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA marge incluse" : "Sans TVA"}</p>
                 </div>
               )}
             </div>
@@ -445,10 +501,30 @@ export default function VehicleDetailPage() {
                     <option value="alcopa">Alcopa Auction</option>
                     <option value="bca">BCA</option>
                     <option value="vpauto">VPAuto</option>
+                    <option value="interencheres">Interenchères</option>
+                    <option value="encheres_vo">Enchères VO</option>
+                    <option value="capcar">CapCar Pro</option>
+                    <option value="planete_auto">Planète Auto</option>
                     <option value="particulier">Particulier</option>
                     <option value="mandataire">Mandataire</option>
                     <option value="autre">Autre</option>
                   </select>
+                  {sourceAchat === "alcopa" && (
+                    <div className="flex gap-2 mt-1.5">
+                      {["en_ligne", "salle"].map((mode) => (
+                        <button key={mode} onClick={() => { setModeEnchere(mode); save({ mode_enchere: mode }); }}
+                          className={`text-[10px] px-2.5 py-1 rounded-lg font-medium cursor-pointer transition-colors ${modeEnchere === mode ? "bg-teal-100 text-teal-700" : "bg-slate-50 text-muted hover:bg-slate-100"}`}>
+                          {mode === "en_ligne" ? "En ligne" : "En salle"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {sourceKey && AUCTION_SOURCES[sourceKey] && AUCTION_SOURCES[sourceKey].pct > 0 && (
+                    <p className="text-[10px] text-muted mt-1">
+                      Frais : {(AUCTION_SOURCES[sourceKey].pct * 100).toFixed(1)}% + {AUCTION_SOURCES[sourceKey].fixes}€
+                      {AUCTION_SOURCES[sourceKey].minFrais && ` (min ${AUCTION_SOURCES[sourceKey].minFrais}€)`}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs text-muted">Lien annonce</label>

@@ -38,6 +38,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     "devis_garage", "reparations_selectionnees", "mode_reparation",
     "notes", "devis_reel", "estimation_vyrdict",
     "source_achat", "date_achat", "cout_stockage_jour", "prix_vente_reel", "photo_url", "custom_prices", "lien_annonce",
+    "tva_sur_marge", "marge_minimum", "frais_enchere_pct", "frais_enchere_fixes", "mode_enchere",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
