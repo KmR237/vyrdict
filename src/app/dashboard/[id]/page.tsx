@@ -260,12 +260,29 @@ export default function VehicleDetailPage() {
               <div>
                 <p className="text-2xl font-black tabular-nums">~{Math.round((a.cout_total_min + a.cout_total_max) / 2).toLocaleString("fr-FR")} €</p>
                 <p className="text-xs text-muted">{a.defaillances_count} défaillances — {a.code_postal && `CP ${a.code_postal}`}</p>
-                {vehicle.ct_file_url && (
+                {vehicle.ct_file_url ? (
                   <a href={vehicle.ct_file_url} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline font-medium mt-1 inline-flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     Voir le CT original
                   </a>
+                ) : (
+                  <label className="text-xs text-muted hover:text-primary font-medium mt-1 inline-flex items-center gap-1 cursor-pointer transition-colors">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Ajouter le CT
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const form = new FormData();
+                      form.append("ctFile", f);
+                      const res = await fetch(`/api/dashboard/${id}/upload-ct`, { method: "POST", body: form });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setVehicle((prev) => prev ? { ...prev, ct_file_url: data.ct_file_url } : prev);
+                        toast.show("CT ajouté");
+                      }
+                    }} />
+                  </label>
                 )}
               </div>
             </div>
