@@ -183,12 +183,12 @@ export default function VehicleDetailPage() {
     ? calcAuctionFees(sourceKey, plafondAdjudication, fraisEncherePct ? parseFloat(fraisEncherePct) : undefined, fraisEnchereFixes ? parseFloat(fraisEnchereFixes) : undefined)
     : 0;
 
-  // Sauver le total réparations + estimation pour synchroniser avec la liste
+  // Synchro estimation avec la liste (uniquement estimation_vyrdict, JAMAIS devis_garage)
   useEffect(() => {
-    if (vehicle && estimationSelectionnees > 0 && !devisGarage) {
+    if (vehicle && estimationSelectionnees > 0) {
       save({ estimation_vyrdict: estimationSelectionnees });
     }
-  }, [coutReparations]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [estimationSelectionnees]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="min-h-full flex items-center justify-center text-muted">Chargement...</div>;
   if (!vehicle || !resultat) return <div className="min-h-full flex items-center justify-center text-danger">Véhicule non trouvé</div>;
