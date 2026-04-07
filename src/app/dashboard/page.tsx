@@ -122,14 +122,24 @@ export default function DashboardPage() {
   }, [vehicles]);
 
   // Meilleur deal — véhicule avec la meilleure marge potentielle
+  // Meilleur deal = uniquement véhicules à étudier ou à négocier
   const bestDeal = useMemo(() => {
-    const candidates = vehicles.filter((v) => !["passe", "vendu"].includes(v.statut) && v.analyses);
+    const candidates = vehicles.filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses);
     if (candidates.length === 0) return null;
     return candidates.reduce((best, v) => {
       const m = getMargeNette(v);
       const bm = getMargeNette(best);
       return (m || 0) > (bm || 0) ? v : best;
     });
+  }, [vehicles]);
+
+  // Stock critique = véhicule acheté > 45 jours
+  const criticalStock = useMemo(() => {
+    return vehicles.find((v) =>
+      ["achete", "en_reparation", "en_vente"].includes(v.statut) &&
+      v.date_achat && (daysSince(v.date_achat) || 0) > 45 &&
+      v.analyses
+    );
   }, [vehicles]);
 
   const hasEnoughData = stats.total >= 5;
@@ -205,6 +215,20 @@ export default function DashboardPage() {
           </Link>
         )}
 
+        {/* Stock critique */}
+        {criticalStock && criticalStock.analyses && (
+          <Link href={`/dashboard/${criticalStock.id}`}
+            className="flex items-center justify-between bg-amber-50 border border-amber-200/50 rounded-2xl p-4 mb-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">&#9888;&#65039;</span>
+              <div>
+                <p className="text-xs text-amber-700 font-medium">Stock critique</p>
+                <p className="font-bold text-foreground">{criticalStock.analyses.marque} {criticalStock.analyses.modele} <span className="text-muted font-normal text-sm">— {daysSince(criticalStock.date_achat)}j en stock</span></p>
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <input type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)}
@@ -276,7 +300,7 @@ export default function DashboardPage() {
 
                   return (
                     <tr key={v.id}
-                      className={`border-t border-slate-100 hover:bg-slate-50/50 cursor-pointer border-l-4 ${statut.border}`}
+                      className={`border-t border-slate-100 hover:bg-slate-50/50 cursor-pointer border-l-4 ${statut.border} ${v.statut === "passe" ? "opacity-40" : ""}`}
                       onClick={() => router.push(`/dashboard/${v.id}`)}>
                       <td className="px-4 py-3">
                         <div className="font-semibold text-foreground">{a.marque} {a.modele}</div>

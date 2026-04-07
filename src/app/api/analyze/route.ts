@@ -16,7 +16,7 @@ const SYSTEM_PROMPT = `Expert CT automobile français. Analyse le PV et retourne
 {"vehicule":{"marque":"","modele":"","immatriculation":"","annee":"","kilometrage":0},"code_postal":"","puissance_fiscale":"","energie":"","score_sante":0,"defaillances":[{"code":"","libelle":"","description":"","gravite":"","localisation":"","cout_min":0,"cout_max":0,"priorite":1,"reparation":"","peut_faire_soi_meme":false}],"cout_total_min":0,"cout_total_max":0,"cote_argus_estimee":null,"verdict":"","conseil_verdict":"","contre_visite_deadline":null,"conseils":[]}
 
 RÈGLES :
-- gravite : EXACTEMENT celle du PV (critique/majeur/mineur). Ne JAMAIS modifier.
+- gravite : RECOPIE mot pour mot la gravité inscrite sur le PV. Si le PV dit "mineur" tu mets "mineur". Si le PV dit "majeur" tu mets "majeur". INTERDIT de changer la gravité. Si tu penses qu'un défaut mineur mérite attention, ajoute "À surveiller" dans la description, mais la gravité reste celle du PV.
 - score_sante = 100-(15×critiques)-(8×majeures)-(2×mineures), min 0
 - verdict : cout<500→reparer, cout>2000→arbitrage, sinon→reparer
 - priorite : 1=bloque contre-visite, 2=sécurité, 3=confort

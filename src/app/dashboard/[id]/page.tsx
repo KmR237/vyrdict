@@ -453,38 +453,54 @@ export default function VehicleDetailPage() {
                 </div>
               )}
 
-              {/* TVA + Marge minimum */}
+              {/* TVA */}
               <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { setTvaSurMarge(e.target.checked); save({ tva_sur_marge: e.target.checked }); }}
                     className="w-4 h-4 accent-primary rounded" />
                   <span className="text-xs text-muted">TVA sur marge (20%)</span>
                 </label>
-                <div>
-                  <label className="text-xs text-muted">Marge minimum souhaitée</label>
-                  <div className="flex items-center gap-1 mt-1">
-                    <input type="number" inputMode="numeric" value={margeMinimum}
-                      onChange={(e) => setMargeMinimum(e.target.value)}
-                      onBlur={() => save({ marge_minimum: parseFloat(margeMinimum) || 0 })}
-                      placeholder="500"
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
-                    <span className="text-sm text-muted">€</span>
-                  </div>
-                </div>
               </div>
 
-              {/* Plafond d'adjudication */}
-              {plafondAdjudication !== null && plafondAdjudication > 0 && (
-                <div className="mt-3 p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-xl">
-                  <p className="text-xs text-muted mb-1">Enchérir max (adjudication) :</p>
-                  <p className="text-2xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
-                  {fraisEnchereEstimes > 0 && (
-                    <p className="text-[10px] text-muted mt-1">
-                      Frais enchère estimés : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
-                      {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
-                    </p>
+              {/* Plafond d'adjudication — uniquement avant achat */}
+              {["a_etudier", "a_negocier", "offre_faite", ""].includes(statut) && (
+                <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
+                  <div>
+                    <label className="text-xs text-muted">Marge minimum souhaitée</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <input type="number" inputMode="numeric" value={margeMinimum}
+                        onChange={(e) => setMargeMinimum(e.target.value)}
+                        onBlur={() => save({ marge_minimum: parseFloat(margeMinimum) || 0 })}
+                        placeholder="500"
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
+                      <span className="text-sm text-muted">€</span>
+                    </div>
+                  </div>
+
+                  {plafondAdjudication !== null && plafondAdjudication > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-xl">
+                      <p className="text-xs text-muted mb-1">Enchérir max (adjudication) :</p>
+                      <p className="text-2xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
+                      {fraisEnchereEstimes > 0 && (
+                        <p className="text-[10px] text-muted mt-1">
+                          Frais enchère estimés : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
+                          {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted">Marge minimum : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA marge incluse" : "Sans TVA"}</p>
+                    </div>
                   )}
-                  <p className="text-[10px] text-muted">Marge minimum : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA marge incluse" : "Sans TVA"}</p>
+                </div>
+              )}
+
+              {/* Bilan final — uniquement si vendu */}
+              {statut === "vendu" && margeNette !== null && (
+                <div className={`p-4 rounded-xl ${margeNette >= 0 ? "bg-emerald-50 border border-emerald-200/50" : "bg-red-50 border border-red-200/50"}`}>
+                  <p className="text-xs text-muted mb-1">Bilan final :</p>
+                  <p className={`text-2xl font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                    {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+                  </p>
+                  <p className="text-[10px] text-muted mt-1">Rendement : {rendement}%</p>
                 </div>
               )}
             </div>
