@@ -1,6 +1,6 @@
 import { createServerClient } from "./supabase";
 
-const BUCKET = "documents";
+const BUCKET = "DocumentsCT";
 
 export async function uploadFile(file: Buffer, fileName: string, contentType: string): Promise<string | null> {
   const supabase = createServerClient();
@@ -24,7 +24,7 @@ export async function deleteFile(url: string): Promise<void> {
   const supabase = createServerClient();
 
   // Extract path from public URL
-  const match = url.match(/\/storage\/v1\/object\/public\/documents\/(.+)$/);
+  const match = url.match(/\/storage\/v1\/object\/public\/DocumentsCT\/(.+)$/);
   if (!match) return;
 
   const { error } = await supabase.storage.from(BUCKET).remove([match[1]]);
