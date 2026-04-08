@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { AnalyseResult, Defaillance } from "@/lib/types";
+import type { AnalyseResult } from "@/lib/types";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GraviteBadge } from "@/components/GraviteBadge";
 import { useToast } from "@/components/Toast";
@@ -38,6 +38,9 @@ interface VehicleData {
   prix_vente_reel: number | null;
   photo_url: string | null;
   ct_file_url: string | null;
+  cote_marche: number | null;
+  source_cote: string;
+  date_cote: string | null;
   analyses: {
     resultat: AnalyseResult;
     score_sante: number;
@@ -61,7 +64,6 @@ export default function VehicleDetailPage() {
   const toast = useToast();
   const [vehicle, setVehicle] = useState<VehicleData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   // Editable fields
   const [statut, setStatut] = useState("a_etudier");
@@ -79,15 +81,18 @@ export default function VehicleDetailPage() {
   const [expandedDef, setExpandedDef] = useState<string | null>(null);
   const [lienAnnonce, setLienAnnonce] = useState("");
   const [dateEnchere, setDateEnchere] = useState("");
-  const [tvaSurMarge, setTvaSurMarge] = useState(true);
+  const [tvaSurMarge, setTvaSurMarge] = useState(false);
   const [margeMinimum, setMargeMinimum] = useState("500");
   const [modeEnchere, setModeEnchere] = useState("en_ligne");
-  const [fraisEncherePct, setFraisEncherePct] = useState<string>("");
-  const [fraisEnchereFixes, setFraisEnchereFixes] = useState<string>("");
+  const [fraisEncherePct, setFraisEncherePct] = useState("");
+  const [fraisEnchereFixes, setFraisEnchereFixes] = useState("");
   const [coteMarche, setCoteMarche] = useState("");
   const [sourceCote, setSourceCote] = useState("");
   const [dateCote, setDateCote] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [showAllFields, setShowAllFields] = useState(false);
+  const [quickAchatOpen, setQuickAchatOpen] = useState(false);
+  const [quickAchatPrix, setQuickAchatPrix] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -112,8 +117,8 @@ export default function VehicleDetailPage() {
         setTvaSurMarge(data.tva_sur_marge ?? false);
         setMargeMinimum(data.marge_minimum?.toString() || "500");
         setModeEnchere(data.mode_enchere || "en_ligne");
-        if (data.frais_enchere_pct !== null && data.frais_enchere_pct !== undefined) setFraisEncherePct(data.frais_enchere_pct.toString());
-        if (data.frais_enchere_fixes !== null && data.frais_enchere_fixes !== undefined) setFraisEnchereFixes(data.frais_enchere_fixes.toString());
+        if (data.frais_enchere_pct != null) setFraisEncherePct(data.frais_enchere_pct.toString());
+        if (data.frais_enchere_fixes != null) setFraisEnchereFixes(data.frais_enchere_fixes.toString());
         setCoteMarche(data.cote_marche?.toString() || "");
         setSourceCote(data.source_cote || "");
         setDateCote(data.date_cote || "");
@@ -123,20 +128,22 @@ export default function VehicleDetailPage() {
   }, [id]);
 
   const save = useCallback(async (updates: Record<string, unknown>, label?: string) => {
-    setSaving(true);
     setSaveStatus("saving");
     await fetch(`/api/dashboard/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
-    setSaving(false);
     setSaveStatus("saved");
     if (label) toast.show(label);
     setTimeout(() => setSaveStatus("idle"), 2000);
   }, [id, toast]);
 
   const resultat = vehicle?.analyses?.resultat;
+
+  const isPreAchat = ["a_etudier", "a_negocier", "offre_faite"].includes(statut);
+  const isPostAchat = ["achete", "en_reparation", "en_vente"].includes(statut);
+  const isVendu = statut === "vendu";
 
   // Sélection automatique des réparations selon le mode
   const defaillances = useMemo(() => {
@@ -178,7 +185,7 @@ export default function VehicleDetailPage() {
   const margeNette = margeBrute !== null ? margeBrute - tvaMarge : null;
   const rendement = margeNette !== null && achat > 0 ? Math.round((margeNette / achat) * 100) : null;
 
-  // Plafond d'adjudication avec marge minimum + frais enchère
+  // Plafond d'adjudication
   const margeMin = parseFloat(margeMinimum) || 0;
   const sourceKey = sourceAchat === "alcopa" ? `alcopa_${modeEnchere}` : sourceAchat;
   const budgetMax = revente > 0 ? revente - coutReparations - frais - tvaMarge - margeMin : null;
@@ -189,12 +196,51 @@ export default function VehicleDetailPage() {
     ? calcAuctionFees(sourceKey, plafondAdjudication, fraisEncherePct ? parseFloat(fraisEncherePct) : undefined, fraisEnchereFixes ? parseFloat(fraisEnchereFixes) : undefined)
     : 0;
 
-  // Synchro estimation avec la liste (uniquement estimation_vyrdict, JAMAIS devis_garage)
+  // Delta vs plafond (post-achat)
+  const deltaPlafond = plafondAdjudication !== null && achat > 0 ? plafondAdjudication - achat : null;
+
+  // Synchro estimation
   useEffect(() => {
     if (vehicle && estimationSelectionnees > 0) {
       save({ estimation_vyrdict: estimationSelectionnees });
     }
   }, [estimationSelectionnees]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Quick achat handler
+  const handleQuickAchat = useCallback(async () => {
+    const prix = parseFloat(quickAchatPrix);
+    if (!prix || prix <= 0) return;
+    const updates = { statut: "achete", prix_achat: prix, date_achat: new Date().toISOString().slice(0, 10) };
+    await save(updates, "Acheté !");
+    setStatut("achete");
+    setPrixAchat(prix.toString());
+    setDateAchat(new Date().toISOString().slice(0, 10));
+    setQuickAchatOpen(false);
+    setQuickAchatPrix("");
+  }, [quickAchatPrix, save]);
+
+  // Status change handler
+  const handleStatutChange = useCallback((key: string) => {
+    if (key === "achete" && isPreAchat) {
+      setQuickAchatOpen(true);
+      setQuickAchatPrix(prixAchat || "");
+      return;
+    }
+    setStatut(key);
+    save({ statut: key }, `Statut → ${STATUTS.find(s => s.key === key)?.label}`);
+  }, [isPreAchat, prixAchat, save]);
+
+  // Photo upload via Storage
+  const handlePhotoUpload = useCallback(async (f: File) => {
+    const form = new FormData();
+    form.append("photo", f);
+    const res = await fetch(`/api/dashboard/${id}/upload-photo`, { method: "POST", body: form });
+    if (res.ok) {
+      const { photo_url } = await res.json();
+      setVehicle((prev) => prev ? { ...prev, photo_url } : prev);
+      toast.show("Photo ajoutée");
+    }
+  }, [id, toast]);
 
   if (loading) return <div className="min-h-full flex items-center justify-center text-muted">Chargement...</div>;
   if (!vehicle || !resultat) return <div className="min-h-full flex items-center justify-center text-danger">Véhicule non trouvé</div>;
@@ -226,7 +272,7 @@ export default function VehicleDetailPage() {
             </span>
             <button onClick={() => window.print()} className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer no-print" aria-label="Exporter PDF">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              Exporter PDF
+              PDF
             </button>
           </div>
         </div>
@@ -235,11 +281,10 @@ export default function VehicleDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
 
-          {/* Colonne gauche — Analyse CT (order-2 sur mobile pour que la rentabilité soit en premier) */}
+          {/* ═══ COLONNE GAUCHE — Analyse CT ═══ */}
           <div className="lg:col-span-2 flex flex-col gap-5 order-2 lg:order-1">
             {/* Photo + Score + coût */}
             <div className="flex items-center gap-4 bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
-              {/* Photo véhicule */}
               <label className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 overflow-hidden">
                 {vehicle.photo_url ? (
                   <img src={vehicle.photo_url} alt={`${a.marque} ${a.modele}`} className="w-full h-full object-cover" />
@@ -249,23 +294,15 @@ export default function VehicleDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 )}
-                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (!f) return;
-                  const reader = new FileReader();
-                  reader.onload = async () => {
-                    // Store as data URL (simple, no Supabase Storage needed for MVP)
-                    const dataUrl = reader.result as string;
-                    await save({ photo_url: dataUrl }, "Photo ajoutée");
-                    setVehicle((prev) => prev ? { ...prev, photo_url: dataUrl } : prev);
-                  };
-                  reader.readAsDataURL(f);
+                  if (f) handlePhotoUpload(f);
                 }} />
               </label>
               <ScoreGauge score={a.score_sante} size="sm" />
               <div>
                 <p className="text-2xl font-black tabular-nums">~{Math.round((a.cout_total_min + a.cout_total_max) / 2).toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted">{a.defaillances_count} défaillances — {a.code_postal && `CP ${a.code_postal}`}</p>
+                <p className="text-xs text-muted">{a.defaillances_count} défaillances{a.code_postal && ` — CP ${a.code_postal}`}</p>
                 {vehicle.ct_file_url ? (
                   <a href={vehicle.ct_file_url} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline font-medium mt-1 inline-flex items-center gap-1">
@@ -309,11 +346,10 @@ export default function VehicleDetailPage() {
 
             {/* Défaillances */}
             <div className="flex flex-col gap-2">
-              {defaillances.sort((a, b) => a.priorite - b.priorite).map((d, idx) => {
+              {defaillances.sort((x, y) => x.priorite - y.priorite).map((d, idx) => {
                 const key = `${d.code}-${idx}`;
                 const estimation = d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2);
                 const customPrice = customPrices[key];
-                const displayPrice = customPrice ? parseInt(customPrice) || estimation : estimation;
                 const isExpanded = expandedDef === key;
 
                 return (
@@ -376,41 +412,140 @@ export default function VehicleDetailPage() {
             </button>
           </div>
 
-          {/* Colonne droite — Rentabilité (order-1 sur mobile = affiché en premier) */}
-          <div className="flex flex-col gap-5 order-1 lg:order-2">
-            {/* Statut pipeline */}
+          {/* ═══ COLONNE DROITE — Rentabilité ═══ */}
+          <div className="flex flex-col gap-4 order-1 lg:order-2">
+
+            {/* ── A. CHIFFRE CLÉ — adapté au statut ── */}
+            {isPreAchat && plafondAdjudication !== null && plafondAdjudication > 0 && (
+              <div className="p-5 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200/50 rounded-2xl shadow-sm">
+                <p className="text-xs text-teal-600 font-medium mb-1">Enchérir max</p>
+                <p className="text-3xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
+                {fraisEnchereEstimes > 0 && (
+                  <p className="text-[10px] text-muted mt-1">
+                    Frais enchère : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
+                    {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
+                  </p>
+                )}
+                <p className="text-[10px] text-muted">Marge min : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA incluse" : "Sans TVA"}</p>
+              </div>
+            )}
+
+            {isPostAchat && margeNette !== null && (
+              <div className={`p-5 rounded-2xl shadow-sm border ${margeNette >= 0 ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
+                <p className="text-xs text-muted font-medium mb-1">Marge nette estimée</p>
+                <p className={`text-3xl font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                  {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+                </p>
+                {rendement !== null && <p className="text-xs text-muted mt-1">Rendement : {rendement}%</p>}
+                {/* D. Delta vs plafond */}
+                {deltaPlafond !== null && (
+                  <p className={`text-xs font-medium mt-1 ${deltaPlafond >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                    {deltaPlafond >= 0 ? `Acheté ${deltaPlafond.toLocaleString("fr-FR")} € sous le plafond` : `Acheté ${Math.abs(deltaPlafond).toLocaleString("fr-FR")} € au-dessus du plafond`}
+                  </p>
+                )}
+                {joursStock > 0 && (
+                  <p className={`text-xs mt-1 ${joursStock > 60 ? "text-danger font-medium" : joursStock > 45 ? "text-amber-600 font-medium" : "text-muted"}`}>
+                    {joursStock}j en stock{coutStock > 0 ? ` — coût : ${coutStock.toLocaleString("fr-FR")} €` : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {isVendu && margeNette !== null && (
+              <div className={`p-5 rounded-2xl shadow-sm border ${margeNette >= 0 ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
+                <p className="text-xs text-muted font-medium mb-1">Bilan final</p>
+                <p className={`text-3xl font-black tabular-nums ${margeNette >= 0 ? "text-green-600" : "text-danger"}`}>
+                  {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+                </p>
+                {rendement !== null && <p className="text-xs text-muted mt-1">Rendement : {rendement}% — {joursStock}j de cycle</p>}
+              </div>
+            )}
+
+            {/* ── Statut pipeline ── */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">Statut</label>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {STATUTS.map((s) => (
-                  <button key={s.key} onClick={() => { setStatut(s.key); save({ statut: s.key }, `Statut → ${s.label}`); }}
+                  <button key={s.key} onClick={() => handleStatutChange(s.key)}
                     className={`text-[10px] px-2.5 py-1 rounded-full font-semibold transition-colors cursor-pointer ${statut === s.key ? s.color + " ring-2 ring-offset-1 ring-current" : "bg-slate-50 text-muted hover:bg-slate-100"}`}>
                     {s.label}
                   </button>
                 ))}
               </div>
+              {/* C. Quick achat form */}
+              {quickAchatOpen && (
+                <div className="mt-3 p-3 bg-teal-50 rounded-xl border border-teal-200/50 flex items-center gap-2">
+                  <span className="text-xs text-teal-700 font-medium shrink-0">Prix d&apos;achat :</span>
+                  <input type="number" inputMode="numeric" value={quickAchatPrix} autoFocus
+                    onChange={(e) => setQuickAchatPrix(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleQuickAchat(); if (e.key === "Escape") setQuickAchatOpen(false); }}
+                    placeholder="4 200"
+                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-teal-200 text-sm tabular-nums bg-white focus:border-teal-500 focus:outline-none" />
+                  <span className="text-xs text-muted">€</span>
+                  <button onClick={handleQuickAchat} className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors cursor-pointer">OK</button>
+                  <button onClick={() => setQuickAchatOpen(false)} className="p-1 text-muted hover:text-foreground cursor-pointer">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Calculateur de rentabilité */}
+            {/* ── F. Cascade financière ── */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-4">Rentabilité</h3>
+              <h3 className="font-bold text-sm mb-3">Rentabilité</h3>
 
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label className="text-xs text-muted">Devis garage total (optionnel)</label>
-                  <div className="flex items-center gap-1 mt-1">
-                    <input type="number" inputMode="numeric" value={devisGarage}
-                      onChange={(e) => setDevisGarage(e.target.value)}
-                      onBlur={() => save({ devis_garage: devisGarage ? parseFloat(devisGarage) : null, devis_reel: devisGarage ? parseFloat(devisGarage) : null })}
-                      placeholder={`~${estimationSelectionnees}`}
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
-                    <span className="text-sm text-muted">€</span>
-                  </div>
-                  {!devisGarage && <p className="text-[10px] text-muted mt-0.5">Sans devis, l&apos;estimation Vyrdict (~{estimationSelectionnees} €) est utilisée</p>}
+              {/* Cascade visuelle */}
+              {(achat > 0 || revente > 0) && (
+                <div className="flex flex-col gap-1 text-xs mb-4 p-3 bg-slate-50 rounded-xl">
+                  {revente > 0 && (
+                    <div className="flex justify-between"><span>Revente visée</span><span className="font-semibold tabular-nums">{revente.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {achat > 0 && (
+                    <div className="flex justify-between"><span>− Achat</span><span className="font-semibold tabular-nums text-slate-600">−{achat.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {coutReparations > 0 && (
+                    <div className="flex justify-between"><span>− Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">−{coutReparations.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {frais > 0 && (
+                    <div className="flex justify-between"><span>− Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {coutStock > 0 && (
+                    <div className="flex justify-between"><span>− Stockage ({joursStock}j)</span><span className="font-semibold tabular-nums text-amber-600">−{coutStock.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {tvaMarge > 0 && (
+                    <div className="flex justify-between"><span>− TVA marge (20%)</span><span className="font-semibold tabular-nums text-danger">−{tvaMarge.toLocaleString("fr-FR")} €</span></div>
+                  )}
+                  {margeNette !== null && (
+                    <div className="flex justify-between pt-1.5 mt-1 border-t border-slate-200/60">
+                      <span className="font-bold">= Marge nette</span>
+                      <span className={`font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                        {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+                      </span>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* Champs — contextuels selon statut */}
+              <div className="flex flex-col gap-3">
+                {/* Devis — masqué pré-achat sauf showAll */}
+                {(isPostAchat || isVendu || showAllFields) && (
+                  <div>
+                    <label className="text-xs text-muted">Devis garage total</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <input type="number" inputMode="numeric" value={devisGarage}
+                        onChange={(e) => setDevisGarage(e.target.value)}
+                        onBlur={() => save({ devis_garage: devisGarage ? parseFloat(devisGarage) : null, devis_reel: devisGarage ? parseFloat(devisGarage) : null })}
+                        placeholder={`~${estimationSelectionnees}`}
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
+                      <span className="text-sm text-muted">€</span>
+                    </div>
+                    {!devisGarage && <p className="text-[10px] text-muted mt-0.5">Estimation Vyrdict : ~{estimationSelectionnees} €</p>}
+                  </div>
+                )}
 
                 <div>
-                  <label className="text-xs text-muted">Prix d&apos;enchère / achat</label>
+                  <label className="text-xs text-muted">{isPreAchat ? "Budget achat max" : "Prix d'achat"}</label>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixAchat}
                       onChange={(e) => setPrixAchat(e.target.value)}
@@ -424,10 +559,7 @@ export default function VehicleDetailPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-muted">Prix de revente visé</label>
-                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer"
-                      className="text-[10px] text-primary hover:underline font-medium">
-                      Cote LaCentrale &rarr;
-                    </a>
+                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">Cote &rarr;</a>
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixRevente}
@@ -442,26 +574,20 @@ export default function VehicleDetailPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-muted">Cote marché</label>
-                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer"
-                      className="text-[10px] text-primary hover:underline font-medium">
-                      LaCentrale &rarr;
-                    </a>
+                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">LaCentrale &rarr;</a>
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={coteMarche}
                       onChange={(e) => setCoteMarche(e.target.value)}
                       onBlur={() => {
-                        save({
-                          cote_marche: coteMarche ? parseFloat(coteMarche) : null,
-                          date_cote: coteMarche && !dateCote ? new Date().toISOString().slice(0, 10) : dateCote || null,
-                        });
+                        save({ cote_marche: coteMarche ? parseFloat(coteMarche) : null, date_cote: coteMarche && !dateCote ? new Date().toISOString().slice(0, 10) : dateCote || null });
                         if (coteMarche && !dateCote) setDateCote(new Date().toISOString().slice(0, 10));
                       }}
                       placeholder="8 500"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
                     <span className="text-sm text-muted">€</span>
                   </div>
-                  <div className="flex gap-2 mt-1.5">
+                  <div className="flex gap-2 mt-1">
                     <select value={sourceCote} onChange={(e) => { setSourceCote(e.target.value); save({ source_cote: e.target.value }); }}
                       className="text-[11px] px-2 py-1 rounded-lg border border-slate-200 bg-white text-muted cursor-pointer">
                       <option value="">Source...</option>
@@ -485,53 +611,16 @@ export default function VehicleDetailPage() {
                     <span className="text-sm text-muted">€</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Résultat marge */}
-              {margeBrute !== null && (
-                <div className={`mt-4 p-4 rounded-xl ${margeNette !== null && margeNette >= 0 ? "bg-emerald-50 border border-emerald-200/50" : "bg-red-50 border border-red-200/50"}`}>
-                  <div className="flex flex-col gap-1.5 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted">Marge brute</span>
-                      <span className="font-semibold tabular-nums">{margeBrute.toLocaleString("fr-FR")} €</span>
-                    </div>
-                    {tvaMarge > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted">TVA sur marge (20%)</span>
-                        <span className="font-semibold tabular-nums text-danger">-{tvaMarge.toLocaleString("fr-FR")} €</span>
-                      </div>
-                    )}
-                    {coutStock > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted">Stockage ({joursStock}j × {coutStockageJour}€)</span>
-                        <span className="font-semibold tabular-nums text-amber-600">-{coutStock.toLocaleString("fr-FR")} €</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between pt-2 border-t border-slate-200/50">
-                      <span className="font-bold">Marge nette</span>
-                      <span className={`text-xl font-black tabular-nums ${margeNette !== null && margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
-                        {margeNette !== null ? (margeNette >= 0 ? "+" : "") + margeNette.toLocaleString("fr-FR") + " €" : "—"}
-                      </span>
-                    </div>
-                  </div>
-                  {rendement !== null && (
-                    <p className="text-xs text-muted mt-2">Rendement : {rendement}%</p>
-                  )}
-                </div>
-              )}
-
-              {/* TVA */}
-              <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
+                {/* TVA */}
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val === true }, val ? "TVA activée" : "TVA désactivée"); }}
+                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val }, val ? "TVA activée" : "TVA désactivée"); }}
                     className="w-4 h-4 accent-primary rounded" />
                   <span className="text-xs text-muted">TVA sur marge (20%)</span>
                 </label>
-              </div>
 
-              {/* Plafond d'adjudication — uniquement avant achat */}
-              {["a_etudier", "a_negocier", "offre_faite", ""].includes(statut) && (
-                <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-slate-100">
+                {/* Marge minimum — pré-achat uniquement */}
+                {(isPreAchat || showAllFields) && (
                   <div>
                     <label className="text-xs text-muted">Marge minimum souhaitée</label>
                     <div className="flex items-center gap-1 mt-1">
@@ -543,38 +632,20 @@ export default function VehicleDetailPage() {
                       <span className="text-sm text-muted">€</span>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {plafondAdjudication !== null && plafondAdjudication > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-xl">
-                      <p className="text-xs text-muted mb-1">Enchérir max (adjudication) :</p>
-                      <p className="text-2xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
-                      {fraisEnchereEstimes > 0 && (
-                        <p className="text-[10px] text-muted mt-1">
-                          Frais enchère estimés : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
-                          {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
-                        </p>
-                      )}
-                      <p className="text-[10px] text-muted">Marge minimum : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA marge incluse" : "Sans TVA"}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Bilan final — uniquement si vendu */}
-              {statut === "vendu" && margeNette !== null && (
-                <div className={`p-4 rounded-xl ${margeNette >= 0 ? "bg-emerald-50 border border-emerald-200/50" : "bg-red-50 border border-red-200/50"}`}>
-                  <p className="text-xs text-muted mb-1">Bilan final :</p>
-                  <p className={`text-2xl font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
-                    {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
-                  </p>
-                  <p className="text-[10px] text-muted mt-1">Rendement : {rendement}%</p>
-                </div>
+              {/* Toggle tous les champs */}
+              {!showAllFields && (
+                <button onClick={() => setShowAllFields(true)} className="text-[11px] text-muted hover:text-primary transition-colors cursor-pointer mt-3">
+                  Voir tous les champs &darr;
+                </button>
               )}
             </div>
 
-            {/* Infos achat */}
+            {/* ── E. Source + enchère (groupé, lié au plafond) ── */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-4">Informations achat</h3>
+              <h3 className="font-bold text-sm mb-3">{isPreAchat ? "Enchère / Achat" : "Informations achat"}</h3>
               <div className="flex flex-col gap-3">
                 <div>
                   <label className="text-xs text-muted">Source</label>
@@ -609,7 +680,9 @@ export default function VehicleDetailPage() {
                     </p>
                   )}
                 </div>
-                {["a_etudier", "a_negocier", "offre_faite", ""].includes(statut) && (
+
+                {/* Date enchère — pré-achat */}
+                {(isPreAchat || showAllFields) && (
                   <div>
                     <label className="text-xs text-muted">Date enchère</label>
                     <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
@@ -617,6 +690,7 @@ export default function VehicleDetailPage() {
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
                   </div>
                 )}
+
                 <div>
                   <label className="text-xs text-muted">Lien annonce</label>
                   <div className="flex gap-2 mt-1">
@@ -632,36 +706,38 @@ export default function VehicleDetailPage() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted">Date d&apos;achat</label>
-                  <input type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)}
-                    onBlur={() => save({ date_achat: dateAchat || null })}
-                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
-                  {dateAchat && (
-                    <p className={`text-xs mt-1 font-medium ${joursStock > 60 ? "text-danger" : joursStock > 45 ? "text-amber-600" : "text-muted"}`}>
-                      {joursStock} jour{joursStock > 1 ? "s" : ""} en stock
-                      {coutStock > 0 && ` — coût : ${coutStock.toLocaleString("fr-FR")} €`}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs text-muted">Coût stockage / jour</label>
-                  <div className="flex items-center gap-1 mt-1">
-                    <input type="number" inputMode="numeric" value={coutStockageJour}
-                      onChange={(e) => setCoutStockageJour(e.target.value)}
-                      onBlur={() => save({ cout_stockage_jour: parseFloat(coutStockageJour) || 12 })}
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
-                    <span className="text-sm text-muted">€/j</span>
-                  </div>
-                </div>
-                {vehicle.analyses.energie && (
+
+                {/* Date achat + stockage — post-achat */}
+                {(isPostAchat || isVendu || showAllFields) && (
+                  <>
+                    <div>
+                      <label className="text-xs text-muted">Date d&apos;achat</label>
+                      <input type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)}
+                        onBlur={() => save({ date_achat: dateAchat || null })}
+                        className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted">Coût stockage / jour</label>
+                      <div className="flex items-center gap-1 mt-1">
+                        <input type="number" inputMode="numeric" value={coutStockageJour}
+                          onChange={(e) => setCoutStockageJour(e.target.value)}
+                          onBlur={() => save({ cout_stockage_jour: parseFloat(coutStockageJour) || 12 })}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
+                        <span className="text-sm text-muted">€/j</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {a.energie && (
                   <div className="flex items-center gap-2 text-xs text-muted">
-                    <span className="px-2 py-0.5 bg-slate-100 rounded-lg font-medium">{vehicle.analyses.energie}</span>
-                    {vehicle.analyses.puissance_fiscale && <span>{vehicle.analyses.puissance_fiscale} CV</span>}
+                    <span className="px-2 py-0.5 bg-slate-100 rounded-lg font-medium">{a.energie}</span>
+                    {a.puissance_fiscale && <span>{a.puissance_fiscale} CV</span>}
                   </div>
                 )}
               </div>
             </div>
+
           </div>
         </div>
       </main>
