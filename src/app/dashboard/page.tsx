@@ -217,7 +217,12 @@ function DashboardPage() {
 
   const openQuickDate = useCallback((id: string, currentDate: string | null) => {
     setQuickDateId(id);
-    setQuickDateValue(currentDate ? new Date(currentDate).toISOString().slice(0, 16) : "");
+    if (currentDate) {
+      const d = new Date(currentDate);
+      setQuickDateValue(`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}-${d.getDate().toString().padStart(2,"0")}T${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`);
+    } else {
+      setQuickDateValue("");
+    }
     setTimeout(() => quickDateRef.current?.focus(), 50);
   }, []);
 
