@@ -81,11 +81,15 @@ function daysSince(dateStr: string | null): number | null {
 function getEnchereBadge(dateStr: string | null): { label: string; color: string } | null {
   if (!dateStr) return null;
   const date = new Date(dateStr);
-  const diffH = (date.getTime() - Date.now()) / (1000 * 60 * 60);
-  if (diffH < 0) return null;
-  if (diffH < 24) return { label: `Auj. ${date.getHours()}h${date.getMinutes().toString().padStart(2, "0")}`, color: "bg-red-100 text-red-700" };
-  if (diffH < 48) return { label: "Demain", color: "bg-amber-100 text-amber-700" };
-  if (diffH < 168) return { label: `${date.toLocaleDateString("fr-FR", { weekday: "short" })} ${date.getHours()}h`, color: "bg-blue-100 text-blue-700" };
+  if (date.getTime() < Date.now()) return null;
+  // Comparer par jour calendaire (pas par heures)
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return { label: `Auj. ${date.getHours()}h${date.getMinutes().toString().padStart(2, "0")}`, color: "bg-red-100 text-red-700" };
+  if (diffDays === 1) return { label: `Dem. ${date.getHours()}h${date.getMinutes().toString().padStart(2, "0")}`, color: "bg-amber-100 text-amber-700" };
+  if (diffDays <= 7) return { label: `${date.toLocaleDateString("fr-FR", { weekday: "short" })} ${date.getHours()}h`, color: "bg-blue-100 text-blue-700" };
   return { label: date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }), color: "bg-slate-100 text-muted" };
 }
 
