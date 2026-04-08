@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { calcMaxAdjudication } from "@/lib/auction-fees";
 
 interface VehicleRow {
@@ -121,12 +121,20 @@ function getCoutReparations(v: VehicleRow): number {
   return v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
 }
 
-export default function DashboardPage() {
+type SortKey = "statut" | "date" | "marge" | "score" | "stock" | "enchere";
+const VALID_SORTS: SortKey[] = ["statut", "date", "marge", "score", "stock", "enchere"];
+
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-full flex items-center justify-center text-muted">Chargement...</div>}>
+      <DashboardPage />
+    </Suspense>
+  );
+}
+
+function DashboardPage() {
   const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"statut" | "date" | "marge" | "score" | "stock" | "enchere">("statut");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [quickPriceId, setQuickPriceId] = useState<string | null>(null);
@@ -137,6 +145,26 @@ export default function DashboardPage() {
   const quickPriceRef = useRef<HTMLInputElement>(null);
   const quickDateRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Filter & sort from URL search params
+  const filter = searchParams.get("filter") || "all";
+  const sortBy = (VALID_SORTS.includes(searchParams.get("sort") as SortKey) ? searchParams.get("sort") : "statut") as SortKey;
+  const search = searchParams.get("q") || "";
+
+  const setParam = useCallback((key: string, value: string, defaultValue: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === defaultValue) {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
+
+  const setFilter = useCallback((v: string) => setParam("filter", v, "all"), [setParam]);
+  const setSortBy = useCallback((v: string) => setParam("sort", v, "statut"), [setParam]);
+  const setSearch = useCallback((v: string) => setParam("q", v, ""), [setParam]);
 
   const fetchVehicles = useCallback(async () => {
     const res = await fetch("/api/dashboard");
