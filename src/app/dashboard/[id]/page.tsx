@@ -106,7 +106,7 @@ export default function VehicleDetailPage() {
         setCustomPrices(data.custom_prices || {});
         setLienAnnonce(data.lien_annonce || "");
         setDateEnchere(data.date_enchere ? new Date(data.date_enchere).toISOString().slice(0, 16) : "");
-        setTvaSurMarge(data.tva_sur_marge ?? true);
+        setTvaSurMarge(data.tva_sur_marge ?? false);
         setMargeMinimum(data.marge_minimum?.toString() || "500");
         setModeEnchere(data.mode_enchere || "en_ligne");
         if (data.frais_enchere_pct !== null && data.frais_enchere_pct !== undefined) setFraisEncherePct(data.frais_enchere_pct.toString());

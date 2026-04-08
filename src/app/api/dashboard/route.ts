@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
       id, created_at, statut, prix_achat, prix_revente, devis_garage,
       frais_annexes, estimation_vyrdict, devis_reel, date_achat,
       cout_stockage_jour, source_achat, notes,
+      date_enchere, tva_sur_marge, marge_minimum, lien_annonce,
+      frais_enchere_pct, frais_enchere_fixes, mode_enchere,
       analyses (
         marque, modele, immatriculation, annee, kilometrage,
         score_sante, cout_total_min, cout_total_max, verdict,
