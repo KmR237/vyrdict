@@ -113,7 +113,11 @@ export default function VehicleDetailPage() {
         setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
         setCustomPrices(data.custom_prices || {});
         setLienAnnonce(data.lien_annonce || "");
-        setDateEnchere(data.date_enchere ? new Date(data.date_enchere).toISOString().slice(0, 16) : "");
+        if (data.date_enchere) {
+          const d = new Date(data.date_enchere);
+          const local = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}-${d.getDate().toString().padStart(2,"0")}T${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+          setDateEnchere(local);
+        }
         setTvaSurMarge(data.tva_sur_marge ?? false);
         setMargeMinimum(data.marge_minimum?.toString() || "500");
         setModeEnchere(data.mode_enchere || "en_ligne");
