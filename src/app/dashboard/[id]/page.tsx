@@ -533,7 +533,7 @@ export default function VehicleDetailPage() {
               {/* Champs — contextuels selon statut */}
               <div className="flex flex-col gap-3">
                 {/* Devis — masqué pré-achat sauf showAll */}
-                {(isPostAchat || isVendu || showAllFields) && (
+                {(isPostAchat || isVendu || showAllFields || !!devisGarage) && (
                   <div>
                     <label className="text-xs text-muted">Devis garage total</label>
                     <div className="flex items-center gap-1 mt-1">
@@ -624,7 +624,7 @@ export default function VehicleDetailPage() {
                 </label>
 
                 {/* Marge minimum — pré-achat uniquement */}
-                {(isPreAchat || showAllFields) && (
+                {(isPreAchat || showAllFields || !!margeMinimum) && (
                   <div>
                     <label className="text-xs text-muted">Marge minimum souhaitée</label>
                     <div className="flex items-center gap-1 mt-1">
@@ -686,7 +686,7 @@ export default function VehicleDetailPage() {
                 </div>
 
                 {/* Date enchère — pré-achat */}
-                {(isPreAchat || showAllFields) && (
+                {(isPreAchat || showAllFields || !!dateEnchere) && (
                   <div>
                     <label className="text-xs text-muted">Date enchère</label>
                     <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
@@ -712,7 +712,7 @@ export default function VehicleDetailPage() {
                 </div>
 
                 {/* Date achat + stockage — post-achat */}
-                {(isPostAchat || isVendu || showAllFields) && (
+                {(isPostAchat || isVendu || showAllFields || !!dateAchat) && (
                   <>
                     <div>
                       <label className="text-xs text-muted">Date d&apos;achat</label>
