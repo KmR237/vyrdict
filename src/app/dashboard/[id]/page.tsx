@@ -690,7 +690,15 @@ export default function VehicleDetailPage() {
                   <div>
                     <label className="text-xs text-muted">Date enchère</label>
                     <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
-                      onBlur={() => save({ date_enchere: dateEnchere ? new Date(dateEnchere).toISOString() : null })}
+                      onBlur={() => {
+                        if (!dateEnchere) { save({ date_enchere: null }); return; }
+                        // Ajouter le timezone offset local pour que Supabase stocke la bonne heure
+                        const offset = new Date().getTimezoneOffset();
+                        const sign = offset <= 0 ? "+" : "-";
+                        const hh = Math.floor(Math.abs(offset) / 60).toString().padStart(2, "0");
+                        const mm = (Math.abs(offset) % 60).toString().padStart(2, "0");
+                        save({ date_enchere: `${dateEnchere}:00${sign}${hh}:${mm}` });
+                      }}
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
                   </div>
                 )}

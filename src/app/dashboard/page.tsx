@@ -227,7 +227,15 @@ function DashboardPage() {
   }, []);
 
   const submitQuickDate = useCallback(async (id: string) => {
-    await updateVehicle(id, { date_enchere: quickDateValue ? new Date(quickDateValue).toISOString() : null });
+    if (!quickDateValue) {
+      await updateVehicle(id, { date_enchere: null });
+    } else {
+      const offset = new Date().getTimezoneOffset();
+      const sign = offset <= 0 ? "+" : "-";
+      const hh = Math.floor(Math.abs(offset) / 60).toString().padStart(2, "0");
+      const mm = (Math.abs(offset) % 60).toString().padStart(2, "0");
+      await updateVehicle(id, { date_enchere: `${quickDateValue}:00${sign}${hh}:${mm}` });
+    }
     setQuickDateId(null);
     setQuickDateValue("");
   }, [quickDateValue, updateVehicle]);
