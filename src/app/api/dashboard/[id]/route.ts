@@ -39,6 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     "notes", "devis_reel", "estimation_vyrdict",
     "source_achat", "date_achat", "cout_stockage_jour", "prix_vente_reel", "photo_url", "custom_prices", "lien_annonce",
     "tva_sur_marge", "marge_minimum", "frais_enchere_pct", "frais_enchere_fixes", "mode_enchere", "date_enchere",
+    "cote_marche", "source_cote", "date_cote",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

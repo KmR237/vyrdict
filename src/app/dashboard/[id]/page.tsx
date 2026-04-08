@@ -84,6 +84,9 @@ export default function VehicleDetailPage() {
   const [modeEnchere, setModeEnchere] = useState("en_ligne");
   const [fraisEncherePct, setFraisEncherePct] = useState<string>("");
   const [fraisEnchereFixes, setFraisEnchereFixes] = useState<string>("");
+  const [coteMarche, setCoteMarche] = useState("");
+  const [sourceCote, setSourceCote] = useState("");
+  const [dateCote, setDateCote] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
@@ -111,6 +114,9 @@ export default function VehicleDetailPage() {
         setModeEnchere(data.mode_enchere || "en_ligne");
         if (data.frais_enchere_pct !== null && data.frais_enchere_pct !== undefined) setFraisEncherePct(data.frais_enchere_pct.toString());
         if (data.frais_enchere_fixes !== null && data.frais_enchere_fixes !== undefined) setFraisEnchereFixes(data.frais_enchere_fixes.toString());
+        setCoteMarche(data.cote_marche?.toString() || "");
+        setSourceCote(data.source_cote || "");
+        setDateCote(data.date_cote || "");
       }
       setLoading(false);
     })();
@@ -430,6 +436,42 @@ export default function VehicleDetailPage() {
                       placeholder="9 000"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
                     <span className="text-sm text-muted">€</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted">Cote marché</label>
+                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-primary hover:underline font-medium">
+                      LaCentrale &rarr;
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <input type="number" inputMode="numeric" value={coteMarche}
+                      onChange={(e) => setCoteMarche(e.target.value)}
+                      onBlur={() => {
+                        save({
+                          cote_marche: coteMarche ? parseFloat(coteMarche) : null,
+                          date_cote: coteMarche && !dateCote ? new Date().toISOString().slice(0, 10) : dateCote || null,
+                        });
+                        if (coteMarche && !dateCote) setDateCote(new Date().toISOString().slice(0, 10));
+                      }}
+                      placeholder="8 500"
+                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
+                    <span className="text-sm text-muted">€</span>
+                  </div>
+                  <div className="flex gap-2 mt-1.5">
+                    <select value={sourceCote} onChange={(e) => { setSourceCote(e.target.value); save({ source_cote: e.target.value }); }}
+                      className="text-[11px] px-2 py-1 rounded-lg border border-slate-200 bg-white text-muted cursor-pointer">
+                      <option value="">Source...</option>
+                      <option value="lacentrale">LaCentrale</option>
+                      <option value="argus">Argus</option>
+                      <option value="autoscout24">AutoScout24</option>
+                      <option value="leboncoin">LeBonCoin</option>
+                      <option value="estimation">Mon estimation</option>
+                    </select>
+                    {dateCote && <span className="text-[10px] text-muted self-center">le {new Date(dateCote).toLocaleDateString("fr-FR")}</span>}
                   </div>
                 </div>
 

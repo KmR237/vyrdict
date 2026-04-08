@@ -14,6 +14,7 @@ export default function RapportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [prixDemande, setPrixDemande] = useState("");
+  const [coteManuelle, setCoteManuelle] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function RapportPage() {
   const coutMoyen = Math.round((r.cout_total_min + r.cout_total_max) / 2);
   const prix = prixDemande ? parseInt(prixDemande) : null;
   const prixReel = prix ? prix + coutMoyen : null;
-  const coteArgus = r.cote_argus_estimee;
+  const coteArgus = coteManuelle ? parseInt(coteManuelle) : r.cote_argus_estimee;
 
   // Verdict prix juste
   let verdictPrix: { label: string; color: string; bg: string; detail: string } | null = null;
@@ -138,7 +139,7 @@ export default function RapportPage() {
         </div>
 
         {/* Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center shadow-sm">
             <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Score santé</span>
             <div className="mt-3"><ScoreGauge score={r.score_sante} /></div>
@@ -149,7 +150,7 @@ export default function RapportPage() {
             <span className="text-xs text-muted mt-1 tabular-nums">({r.cout_total_min.toLocaleString("fr-FR")} - {r.cout_total_max.toLocaleString("fr-FR")} &euro;)</span>
             <span className="text-xs text-muted mt-1">{r.defaillances.length} défaillance{r.defaillances.length > 1 ? "s" : ""}</span>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm col-span-2 sm:col-span-1">
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
             <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Prix demandé</span>
             <div className="flex items-center gap-1 mt-3">
               <input type="number" inputMode="numeric" placeholder="8 500" value={prixDemande}
@@ -157,7 +158,19 @@ export default function RapportPage() {
                 className="w-24 text-center text-2xl font-black bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-300 placeholder:text-lg tabular-nums focus:outline-none" />
               <span className="text-2xl font-black text-slate-400">&euro;</span>
             </div>
-            <p className="text-[11px] text-muted mt-1.5">Entrez le prix de l&apos;annonce</p>
+            <p className="text-[11px] text-muted mt-1.5">Prix de l&apos;annonce</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 flex flex-col items-center justify-center shadow-sm">
+            <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Cote marché</span>
+            <div className="flex items-center gap-1 mt-3">
+              <input type="number" inputMode="numeric" placeholder="9 000" value={coteManuelle}
+                onChange={(e) => setCoteManuelle(e.target.value)}
+                className="w-24 text-center text-2xl font-black bg-transparent border-b-2 border-slate-200 focus:border-primary transition-colors placeholder:text-slate-300 placeholder:text-lg tabular-nums focus:outline-none" />
+              <span className="text-2xl font-black text-slate-400">&euro;</span>
+            </div>
+            <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline font-medium mt-1.5">
+              Trouver sur LaCentrale &rarr;
+            </a>
           </div>
         </div>
 
@@ -194,13 +207,15 @@ export default function RapportPage() {
             )}
 
             {!coteArgus && (
-              <p className="text-xs text-muted mt-3">
-                Comparez ce prix réel avec la cote sur{" "}
-                <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                  LaCentrale
-                </a>{" "}
-                pour savoir si c&apos;est une bonne affaire.
-              </p>
+              <div className="mt-3 p-3 bg-slate-50 rounded-xl">
+                <p className="text-xs text-muted">
+                  Renseignez la <strong>cote marché</strong> ci-dessus (via{" "}
+                  <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                    LaCentrale
+                  </a>
+                  ) pour obtenir le verdict : bonne affaire ou trop cher ?
+                </p>
+              </div>
             )}
 
             {prix > 0 && coutMoyen > 0 && (
