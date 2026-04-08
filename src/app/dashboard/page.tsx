@@ -227,7 +227,7 @@ function DashboardPage() {
   }, []);
 
   const submitQuickDate = useCallback(async (id: string) => {
-    await updateVehicle(id, { date_enchere: quickDateValue || null });
+    await updateVehicle(id, { date_enchere: quickDateValue ? new Date(quickDateValue).toISOString() : null });
     setQuickDateId(null);
     setQuickDateValue("");
   }, [quickDateValue, updateVehicle]);

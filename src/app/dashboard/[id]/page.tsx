@@ -690,7 +690,7 @@ export default function VehicleDetailPage() {
                   <div>
                     <label className="text-xs text-muted">Date enchère</label>
                     <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
-                      onBlur={() => save({ date_enchere: dateEnchere || null })}
+                      onBlur={() => save({ date_enchere: dateEnchere ? new Date(dateEnchere).toISOString() : null })}
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
                   </div>
                 )}
