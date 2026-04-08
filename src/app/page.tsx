@@ -118,6 +118,8 @@ export default function Home() {
   const [isDemo, setIsDemo] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [rapportUrl, setRapportUrl] = useState<string | null>(null);
+  const [creatingRapport, setCreatingRapport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -310,6 +312,7 @@ export default function Home() {
     setIsDemo(false);
     setIsSharedView(false);
     setCopied(false);
+    setRapportUrl(null);
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
@@ -338,6 +341,25 @@ export default function Home() {
     const message = buildShareMessage(displayResult, url);
     window.open(`sms:?body=${encodeURIComponent(message)}`, "_blank");
   }, [getShareUrl, displayResult]);
+
+  const createRapport = useCallback(async () => {
+    if (!displayResult || creatingRapport || rapportUrl) return;
+    setCreatingRapport(true);
+    try {
+      const res = await fetch("/api/rapport", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resultat: displayResult }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        const url = `${window.location.origin}/rapport/${id}`;
+        setRapportUrl(url);
+        navigator.clipboard.writeText(url);
+      }
+    } catch { /* ignore */ }
+    setCreatingRapport(false);
+  }, [displayResult, creatingRapport, rapportUrl]);
 
   return (
     <div className="flex flex-col min-h-full">
@@ -778,6 +800,32 @@ export default function Home() {
                     {copied ? "Copié !" : "Copier le lien"}
                   </button>
                 </div>
+                {/* Lien permanent */}
+                <div className="mt-4 pt-4 border-t border-slate-200/50">
+                  {rapportUrl ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-teal-700">Lien permanent créé et copié !</p>
+                        <a href={rapportUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{rapportUrl}</a>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={createRapport} disabled={creatingRapport}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-all cursor-pointer disabled:opacity-50">
+                      {creatingRapport ? (
+                        <span>Création en cours...</span>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                          Créer un lien permanent (court et partageable)
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -821,6 +869,11 @@ export default function Home() {
               <ul className="flex flex-col gap-2 text-sm text-muted">
                 <li><Link href="/guide-controle-technique" className="hover:text-primary transition-colors">Guide du contrôle technique</Link></li>
                 <li><Link href="/contre-visite" className="hover:text-primary transition-colors">Contre-visite : délais et coûts</Link></li>
+                <li><Link href="/defaillance-critique-controle-technique" className="hover:text-primary transition-colors">Défaillance critique CT</Link></li>
+                <li><Link href="/controle-technique-defavorable" className="hover:text-primary transition-colors">CT défavorable : que faire ?</Link></li>
+                <li><Link href="/prix-reparation-controle-technique" className="hover:text-primary transition-colors">Prix des réparations CT</Link></li>
+                <li><Link href="/comprendre-proces-verbal-controle-technique" className="hover:text-primary transition-colors">Comprendre son PV</Link></li>
+                <li><Link href="/pollution-controle-technique" className="hover:text-primary transition-colors">Pollution et CT</Link></li>
                 <li><a href="#faq" className="hover:text-primary transition-colors">Questions fréquentes</a></li>
               </ul>
             </div>
