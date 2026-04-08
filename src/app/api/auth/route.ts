@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
+const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 const COOKIE_SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY || "fallback-secret";
 
 function signToken(email: string): string {
@@ -11,14 +11,14 @@ function signToken(email: string): string {
 export function verifyAuth(request: NextRequest): boolean {
   const cookie = request.cookies.get("vyrdict-auth");
   if (!cookie) return false;
-  return cookie.value === signToken(ADMIN_EMAIL);
+  return ADMIN_EMAILS.some(email => cookie.value === signToken(email));
 }
 
 export async function POST(request: NextRequest) {
   try {
     const { email, code } = await request.json();
 
-    if (!email || email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    if (!email || !ADMIN_EMAILS.includes(email.toLowerCase())) {
       return NextResponse.json({ error: "Accès non autorisé." }, { status: 403 });
     }
 
