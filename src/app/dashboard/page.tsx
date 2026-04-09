@@ -26,6 +26,7 @@ interface VehicleRow {
   frais_enchere_pct: number | null;
   frais_enchere_fixes: number | null;
   mode_enchere: string | null;
+  usage_perso: boolean | null;
   analyses: {
     marque: string;
     modele: string;
@@ -123,6 +124,11 @@ function getPlafond(v: VehicleRow): number | null {
 
 function getCoutReparations(v: VehicleRow): number {
   return v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
+}
+
+function getCoutTotal(v: VehicleRow): number | null {
+  if (!v.prix_achat) return null;
+  return v.prix_achat + getCoutReparations(v) + (v.frais_annexes ?? 350);
 }
 
 type SortKey = "statut" | "date" | "marge" | "score" | "stock" | "enchere";
@@ -262,8 +268,8 @@ function DashboardPage() {
   // Stats
   const stats = useMemo(() => {
     const actifs = vehicles.filter((v) => !["passe", "vendu"].includes(v.statut));
-    const vendus = vehicles.filter((v) => v.statut === "vendu");
-    const achetes = vehicles.filter((v) => ["achete", "en_reparation", "en_vente"].includes(v.statut));
+    const vendus = vehicles.filter((v) => v.statut === "vendu" && !v.usage_perso);
+    const achetes = vehicles.filter((v) => ["achete", "en_reparation", "en_vente"].includes(v.statut) && !v.usage_perso);
     const encheresAujourdhui = vehicles.filter((v) => { const b = getEnchereBadge(v.date_enchere); return b && b.color.includes("red"); });
     return {
       total: vehicles.length,
@@ -278,7 +284,7 @@ function DashboardPage() {
   }, [vehicles]);
 
   const bestDeal = useMemo(() => {
-    const c = vehicles.filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses);
+    const c = vehicles.filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses && !v.usage_perso);
     if (c.length === 0) return null;
     return c.reduce((best, v) => ((getMargeNette(v) || 0) > (getMargeNette(best) || 0) ? v : best));
   }, [vehicles]);
@@ -418,8 +424,10 @@ function DashboardPage() {
             {displayVehicles.map((v) => {
               const a = v.analyses;
               if (!a) return null;
-              const margeNette = getMargeNette(v);
+              const isPerso = v.usage_perso === true;
+              const margeNette = isPerso ? null : getMargeNette(v);
               const plafond = getPlafond(v);
+              const coutTotal = getCoutTotal(v);
               const days = daysSince(v.date_achat);
               const statut = STATUTS[v.statut] || STATUTS.a_etudier;
               const isPreAchat = ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut);
@@ -428,7 +436,7 @@ function DashboardPage() {
               const enchereBadge = getEnchereBadge(v.date_enchere);
               const coutRep = getCoutReparations(v);
               const hasDevisReel = !!(v.devis_garage || v.devis_reel);
-              const nextStatut = NEXT_STATUT[v.statut];
+              const nextStatut = isPerso && v.statut === "en_reparation" ? undefined : NEXT_STATUT[v.statut];
               const isQuickPrice = quickPriceId === v.id;
 
               return (
@@ -442,6 +450,7 @@ function DashboardPage() {
                         <span className="font-semibold text-foreground text-sm">{a.marque} {a.modele}</span>
                         <span className="text-xs text-muted">{a.annee}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${statut.color}`}>{statut.label}</span>
+                        {isPerso && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">Perso</span>}
                         {enchereBadge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${enchereBadge.color}`}>{enchereBadge.label}</span>}
                       </div>
                       {/* Ligne contextuelle selon statut */}
@@ -501,7 +510,12 @@ function DashboardPage() {
                       {isPreAchat && plafond ? (
                         <div>
                           <p className="text-sm font-black tabular-nums text-teal-700">{plafond.toLocaleString("fr-FR")} €</p>
-                          <p className="text-[10px] text-muted">enchérir max</p>
+                          <p className="text-[10px] text-muted">{isPerso ? "budget max" : "enchérir max"}</p>
+                        </div>
+                      ) : isPerso && coutTotal !== null ? (
+                        <div>
+                          <p className="text-sm font-black tabular-nums text-violet-700">{coutTotal.toLocaleString("fr-FR")} €</p>
+                          <p className="text-[10px] text-muted">coût total</p>
                         </div>
                       ) : margeNette !== null ? (
                         <div>

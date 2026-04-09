@@ -89,6 +89,7 @@ export default function VehicleDetailPage() {
   const [coteMarche, setCoteMarche] = useState("");
   const [sourceCote, setSourceCote] = useState("");
   const [dateCote, setDateCote] = useState("");
+  const [usagePerso, setUsagePerso] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showAllFields, setShowAllFields] = useState(false);
   const [quickAchatOpen, setQuickAchatOpen] = useState(false);
@@ -126,6 +127,7 @@ export default function VehicleDetailPage() {
         setCoteMarche(data.cote_marche?.toString() || "");
         setSourceCote(data.source_cote || "");
         setDateCote(data.date_cote || "");
+        setUsagePerso(data.usage_perso ?? false);
       }
       setLoading(false);
     })();
@@ -419,29 +421,40 @@ export default function VehicleDetailPage() {
           {/* ═══ COLONNE DROITE — Rentabilité ═══ */}
           <div className="flex flex-col gap-4 order-1 lg:order-2">
 
-            {/* ── A. CHIFFRE CLÉ — adapté au statut ── */}
+            {/* ── A. CHIFFRE CLÉ — adapté au statut + usage ── */}
             {isPreAchat && plafondAdjudication !== null && plafondAdjudication > 0 && (
-              <div className="p-5 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200/50 rounded-2xl shadow-sm">
-                <p className="text-xs text-teal-600 font-medium mb-1">Enchérir max</p>
-                <p className="text-3xl font-black tabular-nums text-teal-700">{plafondAdjudication.toLocaleString("fr-FR")} €</p>
+              <div className={`p-5 rounded-2xl shadow-sm border ${usagePerso ? "bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200/50" : "bg-gradient-to-br from-teal-50 to-emerald-50 border-teal-200/50"}`}>
+                <p className={`text-xs font-medium mb-1 ${usagePerso ? "text-violet-600" : "text-teal-600"}`}>{usagePerso ? "Budget max" : "Enchérir max"}</p>
+                <p className={`text-3xl font-black tabular-nums ${usagePerso ? "text-violet-700" : "text-teal-700"}`}>{plafondAdjudication.toLocaleString("fr-FR")} €</p>
                 {fraisEnchereEstimes > 0 && (
                   <p className="text-[10px] text-muted mt-1">
                     Frais enchère : {fraisEnchereEstimes.toLocaleString("fr-FR")} €
                     {AUCTION_SOURCES[sourceKey]?.note && ` (${AUCTION_SOURCES[sourceKey].note})`}
                   </p>
                 )}
-                <p className="text-[10px] text-muted">Marge min : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA incluse" : "Sans TVA"}</p>
+                {!usagePerso && <p className="text-[10px] text-muted">Marge min : {margeMin.toLocaleString("fr-FR")} € | {tvaSurMarge ? "TVA incluse" : "Sans TVA"}</p>}
               </div>
             )}
 
-            {isPostAchat && margeNette !== null && (
+            {/* Post-achat PERSO — coût total */}
+            {isPostAchat && usagePerso && achat > 0 && (
+              <div className="p-5 bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200/50 rounded-2xl shadow-sm">
+                <p className="text-xs text-violet-600 font-medium mb-1">Coût total</p>
+                <p className="text-3xl font-black tabular-nums text-violet-700">{(achat + coutReparations + frais).toLocaleString("fr-FR")} €</p>
+                {revente > 0 && (
+                  <p className="text-xs text-emerald-600 font-medium mt-1">Économie vs budget : {(revente - achat - coutReparations - frais).toLocaleString("fr-FR")} €</p>
+                )}
+              </div>
+            )}
+
+            {/* Post-achat REVENTE — marge */}
+            {isPostAchat && !usagePerso && margeNette !== null && (
               <div className={`p-5 rounded-2xl shadow-sm border ${margeNette >= 0 ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
                 <p className="text-xs text-muted font-medium mb-1">Marge nette estimée</p>
                 <p className={`text-3xl font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
                   {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
                 </p>
                 {rendement !== null && <p className="text-xs text-muted mt-1">Rendement : {rendement}%</p>}
-                {/* D. Delta vs plafond */}
                 {deltaPlafond !== null && (
                   <p className={`text-xs font-medium mt-1 ${deltaPlafond >= 0 ? "text-emerald-600" : "text-danger"}`}>
                     {deltaPlafond >= 0 ? `Acheté ${deltaPlafond.toLocaleString("fr-FR")} € sous le plafond` : `Acheté ${Math.abs(deltaPlafond).toLocaleString("fr-FR")} € au-dessus du plafond`}
@@ -455,7 +468,7 @@ export default function VehicleDetailPage() {
               </div>
             )}
 
-            {isVendu && margeNette !== null && (
+            {isVendu && !usagePerso && margeNette !== null && (
               <div className={`p-5 rounded-2xl shadow-sm border ${margeNette >= 0 ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
                 <p className="text-xs text-muted font-medium mb-1">Bilan final</p>
                 <p className={`text-3xl font-black tabular-nums ${margeNette >= 0 ? "text-green-600" : "text-danger"}`}>
@@ -492,40 +505,80 @@ export default function VehicleDetailPage() {
                   </button>
                 </div>
               )}
+              {/* Toggle usage perso */}
+              <label className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 cursor-pointer">
+                <input type="checkbox" checked={usagePerso} onChange={(e) => { const val = e.target.checked; setUsagePerso(val); save({ usage_perso: val }, val ? "Achat personnel" : "Achat revente"); }}
+                  className="w-4 h-4 accent-violet-600 rounded" />
+                <span className="text-xs text-muted">Achat personnel <span className="text-violet-600 font-medium">(pas pour revente)</span></span>
+              </label>
             </div>
 
             {/* ── F. Cascade financière ── */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-3">Rentabilité</h3>
+              <h3 className="font-bold text-sm mb-3">{usagePerso ? "Coût total" : "Rentabilité"}</h3>
 
               {/* Cascade visuelle */}
               {(achat > 0 || revente > 0) && (
                 <div className="flex flex-col gap-1 text-xs mb-4 p-3 bg-slate-50 rounded-xl">
-                  {revente > 0 && (
-                    <div className="flex justify-between"><span>Revente visée</span><span className="font-semibold tabular-nums">{revente.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {achat > 0 && (
-                    <div className="flex justify-between"><span>− Achat</span><span className="font-semibold tabular-nums text-slate-600">−{achat.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {coutReparations > 0 && (
-                    <div className="flex justify-between"><span>− Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">−{coutReparations.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {frais > 0 && (
-                    <div className="flex justify-between"><span>− Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {coutStock > 0 && (
-                    <div className="flex justify-between"><span>− Stockage ({joursStock}j)</span><span className="font-semibold tabular-nums text-amber-600">−{coutStock.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {tvaMarge > 0 && (
-                    <div className="flex justify-between"><span>− TVA marge (20%)</span><span className="font-semibold tabular-nums text-danger">−{tvaMarge.toLocaleString("fr-FR")} €</span></div>
-                  )}
-                  {margeNette !== null && (
-                    <div className="flex justify-between pt-1.5 mt-1 border-t border-slate-200/60">
-                      <span className="font-bold">= Marge nette</span>
-                      <span className={`font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
-                        {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
-                      </span>
-                    </div>
+                  {usagePerso ? (
+                    <>
+                      {achat > 0 && (
+                        <div className="flex justify-between"><span>Achat</span><span className="font-semibold tabular-nums">{achat.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {coutReparations > 0 && (
+                        <div className="flex justify-between"><span>+ Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">+{coutReparations.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {frais > 0 && (
+                        <div className="flex justify-between"><span>+ Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">+{frais.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      <div className="flex justify-between pt-1.5 mt-1 border-t border-slate-200/60">
+                        <span className="font-bold">= Coût total</span>
+                        <span className="font-black tabular-nums text-violet-700">{(achat + coutReparations + frais).toLocaleString("fr-FR")} €</span>
+                      </div>
+                      {revente > 0 && (
+                        <div className="flex justify-between mt-1">
+                          <span className="text-muted">Budget max</span>
+                          <span className="font-semibold tabular-nums">{revente.toLocaleString("fr-FR")} €</span>
+                        </div>
+                      )}
+                      {revente > 0 && achat > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted">Économie</span>
+                          <span className={`font-bold tabular-nums ${revente - achat - coutReparations - frais >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                            {(revente - achat - coutReparations - frais).toLocaleString("fr-FR")} €
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {revente > 0 && (
+                        <div className="flex justify-between"><span>Revente visée</span><span className="font-semibold tabular-nums">{revente.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {achat > 0 && (
+                        <div className="flex justify-between"><span>− Achat</span><span className="font-semibold tabular-nums text-slate-600">−{achat.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {coutReparations > 0 && (
+                        <div className="flex justify-between"><span>− Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">−{coutReparations.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {frais > 0 && (
+                        <div className="flex justify-between"><span>− Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {coutStock > 0 && (
+                        <div className="flex justify-between"><span>− Stockage ({joursStock}j)</span><span className="font-semibold tabular-nums text-amber-600">−{coutStock.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {tvaMarge > 0 && (
+                        <div className="flex justify-between"><span>− TVA marge (20%)</span><span className="font-semibold tabular-nums text-danger">−{tvaMarge.toLocaleString("fr-FR")} €</span></div>
+                      )}
+                      {margeNette !== null && (
+                        <div className="flex justify-between pt-1.5 mt-1 border-t border-slate-200/60">
+                          <span className="font-bold">= Marge nette</span>
+                          <span className={`font-black tabular-nums ${margeNette >= 0 ? "text-emerald-600" : "text-danger"}`}>
+                            {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -562,8 +615,8 @@ export default function VehicleDetailPage() {
 
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-muted">Prix de revente visé</label>
-                    <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">Cote &rarr;</a>
+                    <label className="text-xs text-muted">{usagePerso ? "Budget max tout compris" : "Prix de revente visé"}</label>
+                    {!usagePerso && <a href="https://www.lacentrale.fr/lacote_origine.php" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">Cote &rarr;</a>}
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixRevente}
@@ -616,15 +669,17 @@ export default function VehicleDetailPage() {
                   </div>
                 </div>
 
-                {/* TVA */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val }, val ? "TVA activée" : "TVA désactivée"); }}
-                    className="w-4 h-4 accent-primary rounded" />
-                  <span className="text-xs text-muted">TVA sur marge (20%)</span>
-                </label>
+                {/* TVA — masquée pour perso */}
+                {!usagePerso && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val }, val ? "TVA activée" : "TVA désactivée"); }}
+                      className="w-4 h-4 accent-primary rounded" />
+                    <span className="text-xs text-muted">TVA sur marge (20%)</span>
+                  </label>
+                )}
 
-                {/* Marge minimum — pré-achat uniquement */}
-                {(isPreAchat || showAllFields || !!margeMinimum) && (
+                {/* Marge minimum — pré-achat revente uniquement */}
+                {!usagePerso && (isPreAchat || showAllFields || !!margeMinimum) && (
                   <div>
                     <label className="text-xs text-muted">Marge minimum souhaitée</label>
                     <div className="flex items-center gap-1 mt-1">
