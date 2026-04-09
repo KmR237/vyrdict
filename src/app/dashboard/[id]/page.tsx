@@ -90,10 +90,14 @@ export default function VehicleDetailPage() {
   const [sourceCote, setSourceCote] = useState("");
   const [dateCote, setDateCote] = useState("");
   const [usagePerso, setUsagePerso] = useState(false);
+  const [reparationsFaites, setReparationsFaites] = useState<string[]>([]);
+  const [timeline, setTimeline] = useState<{ date: string; event: string }[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showAllFields, setShowAllFields] = useState(false);
+  const [showFinancier, setShowFinancier] = useState(true);
   const [quickAchatOpen, setQuickAchatOpen] = useState(false);
   const [quickAchatPrix, setQuickAchatPrix] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -128,6 +132,8 @@ export default function VehicleDetailPage() {
         setSourceCote(data.source_cote || "");
         setDateCote(data.date_cote || "");
         setUsagePerso(data.usage_perso ?? false);
+        setReparationsFaites(data.reparations_faites || []);
+        setTimeline(data.timeline || []);
       }
       setLoading(false);
     })();
@@ -212,18 +218,27 @@ export default function VehicleDetailPage() {
     }
   }, [estimationSelectionnees]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Timeline helper
+  const addTimelineEvent = useCallback((event: string) => {
+    const entry = { date: new Date().toISOString(), event };
+    const updated = [...timeline, entry];
+    setTimeline(updated);
+    return updated;
+  }, [timeline]);
+
   // Quick achat handler
   const handleQuickAchat = useCallback(async () => {
     const prix = parseFloat(quickAchatPrix);
     if (!prix || prix <= 0) return;
-    const updates = { statut: "achete", prix_achat: prix, date_achat: new Date().toISOString().slice(0, 10) };
+    const tl = addTimelineEvent(`Acheté à ${prix.toLocaleString("fr-FR")} €`);
+    const updates = { statut: "achete", prix_achat: prix, date_achat: new Date().toISOString().slice(0, 10), timeline: tl };
     await save(updates, "Acheté !");
     setStatut("achete");
     setPrixAchat(prix.toString());
     setDateAchat(new Date().toISOString().slice(0, 10));
     setQuickAchatOpen(false);
     setQuickAchatPrix("");
-  }, [quickAchatPrix, save]);
+  }, [quickAchatPrix, save, addTimelineEvent]);
 
   // Status change handler
   const handleStatutChange = useCallback((key: string) => {
@@ -232,9 +247,65 @@ export default function VehicleDetailPage() {
       setQuickAchatPrix(prixAchat || "");
       return;
     }
+    const label = STATUTS.find(s => s.key === key)?.label || key;
+    const tl = addTimelineEvent(`Statut → ${label}`);
     setStatut(key);
-    save({ statut: key }, `Statut → ${STATUTS.find(s => s.key === key)?.label}`);
-  }, [isPreAchat, prixAchat, save]);
+    save({ statut: key, timeline: tl }, `Statut → ${label}`);
+  }, [isPreAchat, prixAchat, save, addTimelineEvent]);
+
+  // Toggle réparation faite
+  const toggleRepFaite = useCallback((key: string) => {
+    const updated = reparationsFaites.includes(key) ? reparationsFaites.filter(k => k !== key) : [...reparationsFaites, key];
+    setReparationsFaites(updated);
+    save({ reparations_faites: updated });
+  }, [reparationsFaites, save]);
+
+  // Re-scan CT
+  const handleRescan = useCallback(async (f: File) => {
+    const formData = new FormData();
+    formData.append("file", f);
+    toast.show("Analyse en cours...");
+    const res = await fetch("/api/analyze", { method: "POST", body: formData });
+    if (!res.ok) { toast.show("Erreur d'analyse"); return; }
+    const resultatNew = await res.json();
+    if (resultatNew.error) { toast.show(resultatNew.error); return; }
+    // Update the analysis in DB
+    const supaRes = await fetch(`/api/dashboard/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estimation_vyrdict: Math.round((resultatNew.cout_total_min + resultatNew.cout_total_max) / 2) }),
+    });
+    if (supaRes.ok) {
+      const tl = addTimelineEvent("CT re-scanné");
+      save({ timeline: tl });
+      toast.show("CT mis à jour — rechargement...");
+      setTimeout(() => window.location.reload(), 500);
+    }
+  }, [id, toast, save, addTimelineEvent]);
+
+  // Checklist pré-achat
+  const checklistPreAchat = useMemo(() => {
+    if (!isPreAchat) return null;
+    const items = [
+      { label: "Prix revente / budget", ok: !!prixRevente },
+      { label: "Source d'achat", ok: !!sourceAchat },
+      { label: "Cote marché", ok: !!coteMarche },
+    ];
+    const done = items.filter(i => i.ok).length;
+    return { items, done, total: items.length };
+  }, [isPreAchat, prixRevente, sourceAchat, coteMarche]);
+
+  // Progression réparations
+  const repProgression = useMemo(() => {
+    const selected = defaillances.filter(d => d.selected);
+    const faites = selected.filter((_, idx) => {
+      const d = defaillances.find((dd, i) => dd.selected && defaillances.filter(x => x.selected).indexOf(dd) === idx);
+      if (!d) return false;
+      const key = `${d.code}-${defaillances.indexOf(d)}`;
+      return reparationsFaites.includes(key);
+    });
+    return { done: reparationsFaites.filter(k => defaillances.some((d, i) => `${d.code}-${i}` === k && d.selected)).length, total: selected.length };
+  }, [defaillances, reparationsFaites]);
 
   // Photo upload via Storage
   const handlePhotoUpload = useCallback(async (f: File) => {
@@ -336,6 +407,44 @@ export default function VehicleDetailPage() {
               </div>
             </div>
 
+            {/* 2. Checklist pré-achat */}
+            {checklistPreAchat && checklistPreAchat.done < checklistPreAchat.total && (
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200/50 rounded-xl">
+                <span className="text-xs font-bold text-amber-700 tabular-nums">{checklistPreAchat.done}/{checklistPreAchat.total}</span>
+                <div className="flex-1 flex flex-wrap gap-2">
+                  {checklistPreAchat.items.filter(i => !i.ok).map(i => (
+                    <span key={i.label} className="text-[11px] text-amber-700 font-medium">{i.label} manquant</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 1. Progression réparations */}
+            {(isPostAchat || isVendu) && repProgression.total > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-white border border-slate-200/60 rounded-xl shadow-sm">
+                <span className={`text-xs font-bold tabular-nums ${repProgression.done === repProgression.total ? "text-emerald-600" : "text-amber-600"}`}>
+                  {repProgression.done}/{repProgression.total}
+                </span>
+                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${repProgression.done === repProgression.total ? "bg-emerald-500" : "bg-amber-500"}`}
+                    style={{ width: `${repProgression.total > 0 ? (repProgression.done / repProgression.total) * 100 : 0}%` }} />
+                </div>
+                <span className="text-[11px] text-muted">{repProgression.done === repProgression.total ? "Toutes faites" : "réparations"}</span>
+              </div>
+            )}
+
+            {/* 5. Re-scan CT */}
+            {(isPostAchat || isVendu) && (
+              <label className="flex items-center gap-2 text-xs text-primary hover:text-teal-800 font-medium cursor-pointer transition-colors w-fit">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                Re-scanner le CT (contre-visite)
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,image/*" className="hidden" onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleRescan(f);
+                }} />
+              </label>
+            )}
+
             {/* Mode réparation */}
             <div className="flex gap-2">
               {[
@@ -358,12 +467,21 @@ export default function VehicleDetailPage() {
                 const customPrice = customPrices[key];
                 const isExpanded = expandedDef === key;
 
+                const isFaite = reparationsFaites.includes(key);
+
                 return (
-                  <div key={key} className={`rounded-xl border transition-colors ${d.selected ? "bg-white border-slate-200/60 shadow-sm" : "bg-slate-50 border-transparent opacity-50"}`}>
+                  <div key={key} className={`rounded-xl border transition-colors ${isFaite ? "bg-emerald-50/50 border-emerald-200/50" : d.selected ? "bg-white border-slate-200/60 shadow-sm" : "bg-slate-50 border-transparent opacity-50"}`}>
                     <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
                       <input type="checkbox" checked={d.selected} onChange={() => toggleDefaillance(d.code)} className="w-4 h-4 accent-primary rounded shrink-0" />
                       <GraviteBadge gravite={d.gravite} small />
-                      <span className={`flex-1 text-sm font-medium ${d.selected ? "" : "line-through"}`}>{d.libelle}</span>
+                      <span className={`flex-1 text-sm font-medium ${isFaite ? "line-through text-emerald-600" : d.selected ? "" : "line-through"}`}>{d.libelle}</span>
+                      {/* Bouton "fait" — post-achat uniquement */}
+                      {(isPostAchat || isVendu) && d.selected && (
+                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRepFaite(key); }}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer shrink-0 ${isFaite ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"}`}>
+                          {isFaite ? "✓ Fait" : "À faire"}
+                        </button>
+                      )}
                       <input type="number" inputMode="numeric" value={customPrice ?? ""} placeholder={`~${estimation}`}
                         onChange={(e) => { e.stopPropagation(); setCustomPrices((p) => ({ ...p, [key]: e.target.value })); }}
                         onBlur={() => save({ custom_prices: customPrices }, "Prix sauvegardé")}
@@ -409,13 +527,43 @@ export default function VehicleDetailPage() {
             </details>
 
             {/* Supprimer */}
-            <button onClick={async () => {
-              if (!confirm("Supprimer ce véhicule ?")) return;
-              await fetch(`/api/dashboard/${id}`, { method: "DELETE" });
-              router.push("/dashboard");
-            }} className="text-xs text-muted hover:text-danger transition-colors cursor-pointer text-left">
-              Supprimer ce véhicule
-            </button>
+            {/* 4. Timeline */}
+            {timeline.length > 0 && (
+              <details className="group">
+                <summary className="text-sm font-medium text-foreground cursor-pointer flex items-center justify-between py-2">
+                  Historique ({timeline.length})
+                  <svg className="w-4 h-4 text-slate-300 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div className="flex flex-col gap-1.5 mt-1 pl-3 border-l-2 border-slate-200">
+                  {[...timeline].reverse().map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className="text-muted tabular-nums shrink-0">{new Date(t.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}</span>
+                      <span className="text-foreground">{t.event}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            {/* 6. Supprimer sécurisé */}
+            {!confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)} className="text-xs text-muted hover:text-danger transition-colors cursor-pointer text-left">
+                Supprimer ce véhicule
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200/50 rounded-xl">
+                <span className="text-xs text-danger font-medium">Confirmer la suppression ?</span>
+                <button onClick={async () => {
+                  await fetch(`/api/dashboard/${id}`, { method: "DELETE" });
+                  router.push("/dashboard");
+                }} className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer">
+                  Oui, supprimer
+                </button>
+                <button onClick={() => setConfirmDelete(false)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                  Annuler
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ═══ COLONNE DROITE — Rentabilité ═══ */}
@@ -513,9 +661,16 @@ export default function VehicleDetailPage() {
               </label>
             </div>
 
-            {/* ── F. Cascade financière ── */}
-            <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-3">{usagePerso ? "Coût total" : "Rentabilité"}</h3>
+            {/* ── F. Cascade financière (collapsable) ── */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+              <button onClick={() => setShowFinancier(!showFinancier)}
+                className="w-full p-4 flex items-center justify-between cursor-pointer">
+                <h3 className="font-bold text-sm">{usagePerso ? "Coût total" : "Rentabilité"}</h3>
+                <svg className={`w-4 h-4 text-slate-300 transition-transform ${showFinancier ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showFinancier && <div className="px-4 pb-4">
 
               {/* Cascade visuelle */}
               {(achat > 0 || revente > 0) && (
@@ -700,6 +855,7 @@ export default function VehicleDetailPage() {
                   Voir tous les champs &darr;
                 </button>
               )}
+              </div>}
             </div>
 
             {/* ── E. Source + enchère (groupé, lié au plafond) ── */}
