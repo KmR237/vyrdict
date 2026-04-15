@@ -79,15 +79,15 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getEnchereBadge(dateStr: string | null): { label: string; color: string } | null {
+function getEnchereBadge(dateStr: string | null): { label: string; color: string; passed?: boolean } | null {
   if (!dateStr) return null;
   const date = new Date(dateStr);
-  if (date.getTime() < Date.now()) return null;
-  // Comparer par jour calendaire (pas par heures)
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+  // 1. Enchère passée
+  if (date.getTime() < Date.now()) return { label: "Enchère passée", color: "bg-red-200 text-red-800", passed: true };
   if (diffDays === 0) return { label: `Auj. ${date.getHours()}h${date.getMinutes().toString().padStart(2, "0")}`, color: "bg-red-100 text-red-700" };
   if (diffDays === 1) return { label: `Dem. ${date.getHours()}h${date.getMinutes().toString().padStart(2, "0")}`, color: "bg-amber-100 text-amber-700" };
   if (diffDays <= 7) return { label: `${date.toLocaleDateString("fr-FR", { weekday: "short" })} ${date.getHours()}h`, color: "bg-blue-100 text-blue-700" };
@@ -107,7 +107,7 @@ function getPlafond(v: VehicleRow): number | null {
   if (!v.prix_revente) return null;
   const rep = v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
   const frais = v.frais_annexes ?? 350;
-  const margeMin = v.marge_minimum ?? 500;
+  const margeMin = v.usage_perso ? 0 : (v.marge_minimum ?? 500);
   const achat = v.prix_achat || 0;
   const tvaMarge = (v.tva_sur_marge === true) && v.prix_revente > achat && achat > 0
     ? Math.round((v.prix_revente - achat) * 0.2) : 0;
@@ -152,8 +152,11 @@ function DashboardPage() {
   const [quickPriceType, setQuickPriceType] = useState<"achat" | "vente">("achat");
   const [quickDateId, setQuickDateId] = useState<string | null>(null);
   const [quickDateValue, setQuickDateValue] = useState("");
+  const [showPasses, setShowPasses] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const quickPriceRef = useRef<HTMLInputElement>(null);
   const quickDateRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -174,7 +177,15 @@ function DashboardPage() {
 
   const setFilter = useCallback((v: string) => setParam("filter", v, "all"), [setParam]);
   const setSortBy = useCallback((v: string) => setParam("sort", v, "statut"), [setParam]);
-  const setSearch = useCallback((v: string) => setParam("q", v, ""), [setParam]);
+  // 3. Debounce recherche
+  const setSearchDebounced = useCallback((v: string) => {
+    setSearchInput(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setParam("q", v, ""), 300);
+  }, [setParam]);
+
+  // Sync searchInput with URL on load
+  useEffect(() => { setSearchInput(search); }, [search]);
 
   const fetchVehicles = useCallback(async () => {
     const res = await fetch("/api/dashboard");
@@ -248,8 +259,13 @@ function DashboardPage() {
 
   const logout = async () => { await fetch("/api/auth", { method: "DELETE" }); router.push("/"); };
 
+  // 2. Séparer passés du reste
+  const passesCount = useMemo(() => vehicles.filter(v => v.statut === "passe").length, [vehicles]);
+
   const displayVehicles = useMemo(() => {
     let list = vehicles;
+    // 2. Masquer les passés par défaut (sauf si filtre = passe ou showPasses)
+    if (!showPasses && filter !== "passe") list = list.filter(v => v.statut !== "passe");
     if (filter !== "all") list = list.filter((v) => v.statut === filter);
     if (search) {
       const s = search.toLowerCase();
@@ -263,14 +279,20 @@ function DashboardPage() {
       if (sortBy === "stock") return (daysSince(b.date_achat) || 0) - (daysSince(a.date_achat) || 0);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [vehicles, filter, search, sortBy]);
+  }, [vehicles, filter, search, sortBy, showPasses]);
 
-  // Stats
+  // 4. Stats adaptées au filtre
   const stats = useMemo(() => {
-    const actifs = vehicles.filter((v) => !["passe", "vendu"].includes(v.statut));
-    const vendus = vehicles.filter((v) => v.statut === "vendu" && !v.usage_perso);
-    const achetes = vehicles.filter((v) => ["achete", "en_reparation", "en_vente"].includes(v.statut) && !v.usage_perso);
-    const encheresAujourdhui = vehicles.filter((v) => { const b = getEnchereBadge(v.date_enchere); return b && b.color.includes("red"); });
+    const base = filter !== "all" ? vehicles.filter(v => v.statut === filter) : vehicles;
+    const actifs = base.filter((v) => !["passe", "vendu"].includes(v.statut));
+    const vendus = base.filter((v) => v.statut === "vendu" && !v.usage_perso);
+    const achetes = base.filter((v) => ["achete", "en_reparation", "en_vente"].includes(v.statut) && !v.usage_perso);
+    const encheresAujourdhui = vehicles.filter((v) => { const b = getEnchereBadge(v.date_enchere); return b && !b.passed && b.color.includes("red"); });
+    // 1. Enchères passées sans action
+    const encherePassees = vehicles.filter((v) => {
+      const b = getEnchereBadge(v.date_enchere);
+      return b?.passed && ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut);
+    });
     return {
       total: vehicles.length,
       actifs: actifs.length,
@@ -279,15 +301,24 @@ function DashboardPage() {
       margeMoyenne: vendus.length > 0 ? Math.round(vendus.reduce((s, v) => s + (getMargeNette(v) || 0), 0) / vendus.length) : 0,
       alerteStock: actifs.filter((v) => v.date_achat && (daysSince(v.date_achat) || 0) > 45).length,
       encheresAujourdhui: encheresAujourdhui.length,
+      encherePassees: encherePassees.length,
       aTraiter: vehicles.filter((v) => ["a_etudier", "a_negocier"].includes(v.statut)).length,
+      isFiltered: filter !== "all",
     };
-  }, [vehicles]);
+  }, [vehicles, filter]);
 
+  // 7. Best deal = meilleur plafond (pas marge)
   const bestDeal = useMemo(() => {
     const c = vehicles.filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses && !v.usage_perso);
     if (c.length === 0) return null;
-    return c.reduce((best, v) => ((getMargeNette(v) || 0) > (getMargeNette(best) || 0) ? v : best));
+    return c.reduce((best, v) => {
+      const pv = getPlafond(v) || 0;
+      const pb = getPlafond(best) || 0;
+      return pv > pb ? v : best;
+    });
   }, [vehicles]);
+
+  const bestDealPlafond = bestDeal ? getPlafond(bestDeal) : null;
 
   return (
     <div className="min-h-full flex flex-col bg-slate-50">
@@ -321,12 +352,19 @@ function DashboardPage() {
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
         {/* ═══ BLOC "AUJOURD'HUI" ═══ */}
-        {(stats.encheresAujourdhui > 0 || stats.aTraiter > 0 || stats.alerteStock > 0) && (
+        {(stats.encheresAujourdhui > 0 || stats.encherePassees > 0 || stats.aTraiter > 0 || stats.alerteStock > 0) && (
           <div className="flex flex-wrap gap-3 mb-6">
             {stats.encheresAujourdhui > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200/50 rounded-xl text-sm">
                 <span className="text-red-600 font-black tabular-nums">{stats.encheresAujourdhui}</span>
                 <span className="text-red-700 font-medium">enchère{stats.encheresAujourdhui > 1 ? "s" : ""} aujourd&apos;hui</span>
+              </div>
+            )}
+            {/* 1. Enchères passées */}
+            {stats.encherePassees > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-red-100 border border-red-300/50 rounded-xl text-sm">
+                <span className="text-red-700 font-black tabular-nums">{stats.encherePassees}</span>
+                <span className="text-red-800 font-medium">enchère{stats.encherePassees > 1 ? "s" : ""} passée{stats.encherePassees > 1 ? "s" : ""} sans action</span>
               </div>
             )}
             {stats.aTraiter > 0 && (
@@ -344,25 +382,25 @@ function DashboardPage() {
           </div>
         )}
 
-        {/* ═══ RÉSUMÉ FINANCIER ═══ */}
+        {/* ═══ RÉSUMÉ FINANCIER (adapté au filtre) ═══ */}
         {stats.total >= 3 && (
           <div className="flex gap-3 mb-6 overflow-x-auto pb-1">
             {[
-              { label: "À traiter", value: stats.aTraiter, color: "text-blue-600" },
+              ...(!stats.isFiltered ? [{ label: "À traiter", value: stats.aTraiter, color: "text-blue-600" }] : []),
               { label: "Investi", value: `${stats.investiTotal.toLocaleString("fr-FR")} €`, color: "text-foreground" },
               { label: "Marge totale", value: `${stats.margeTotal.toLocaleString("fr-FR")} €`, color: stats.margeTotal >= 0 ? "text-emerald-600" : "text-danger" },
               { label: "Marge moy.", value: `${stats.margeMoyenne.toLocaleString("fr-FR")} €`, color: "text-muted" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-xl border border-slate-200/60 px-4 py-2.5 shadow-sm shrink-0">
-                <p className="text-[10px] text-muted font-medium uppercase tracking-wider">{s.label}</p>
+                <p className="text-[10px] text-muted font-medium uppercase tracking-wider">{s.label}{stats.isFiltered ? " (filtre)" : ""}</p>
                 <p className={`text-lg font-black tabular-nums ${s.color}`}>{s.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* ═══ MEILLEUR DEAL ═══ */}
-        {bestDeal && bestDeal.analyses && (getMargeNette(bestDeal) || 0) > 0 && (
+        {/* ═══ MEILLEUR DEAL (basé sur plafond) ═══ */}
+        {bestDeal && bestDeal.analyses && bestDealPlafond && bestDealPlafond > 0 && (
           <Link href={`/dashboard/${bestDeal.id}`} className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 rounded-2xl p-4 mb-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <span className="text-lg">&#11088;</span>
@@ -372,14 +410,15 @@ function DashboardPage() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-lg font-black text-emerald-600 tabular-nums">+{(getMargeNette(bestDeal) || 0).toLocaleString("fr-FR")} €</p>
+              <p className="text-lg font-black text-teal-700 tabular-nums">{bestDealPlafond.toLocaleString("fr-FR")} €</p>
+              <p className="text-[10px] text-muted">plafond enchère</p>
             </div>
           </Link>
         )}
 
         {/* ═══ TOOLBAR ═══ */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          <input type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)}
+          <input type="text" placeholder="Rechercher..." value={searchInput} onChange={(e) => setSearchDebounced(e.target.value)}
             className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:border-primary focus:outline-none transition-colors" />
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white cursor-pointer">
@@ -395,9 +434,9 @@ function DashboardPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           <button onClick={() => setFilter("all")} className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${filter === "all" ? "bg-foreground text-white" : "bg-white text-muted hover:bg-slate-100 border border-slate-200/60"}`}>
-            Tous ({vehicles.length})
+            Tous ({vehicles.filter(v => v.statut !== "passe").length})
           </button>
-          {Object.entries(STATUTS).map(([key, { label }]) => {
+          {Object.entries(STATUTS).filter(([key]) => key !== "passe").map(([key, { label }]) => {
             const count = vehicles.filter((v) => v.statut === key).length;
             if (count === 0) return null;
             return (
@@ -438,13 +477,14 @@ function DashboardPage() {
               const hasDevisReel = !!(v.devis_garage || v.devis_reel);
               const nextStatut = isPerso && v.statut === "en_reparation" ? undefined : NEXT_STATUT[v.statut];
               const isQuickPrice = quickPriceId === v.id;
+              // 5. Données manquantes
+              const missingData = isPreAchat && !plafond && !v.prix_revente ? "Prix revente ?" : null;
 
               return (
                 <div key={v.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden border-l-4 ${statut.border} ${v.statut === "passe" ? "opacity-40" : ""}`}>
                   {/* Ligne principale */}
                   <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer hover:bg-slate-50/50 transition-colors"
                     onClick={() => setExpandedId(isExpanded ? null : v.id)}>
-                    {/* Véhicule + infos contextuelles */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground text-sm">{a.marque} {a.modele}</span>
@@ -453,18 +493,13 @@ function DashboardPage() {
                         {isPerso && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">Perso</span>}
                         {enchereBadge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${enchereBadge.color}`}>{enchereBadge.label}</span>}
                       </div>
-                      {/* Ligne contextuelle selon statut */}
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {/* Source badge */}
                         {v.source_achat && SOURCE_LABELS[v.source_achat] && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold tracking-wide">{SOURCE_LABELS[v.source_achat]}</span>
                         )}
-                        {/* Pré-achat : coût répa + date enchère */}
                         {isPreAchat && (
                           <>
-                            <span className="text-[11px] text-muted">
-                              répa ~{coutRep.toLocaleString("fr-FR")} €
-                            </span>
+                            <span className="text-[11px] text-muted">répa ~{coutRep.toLocaleString("fr-FR")} €</span>
                             {v.date_enchere ? (
                               <button onClick={(e) => { e.stopPropagation(); openQuickDate(v.id, v.date_enchere); }}
                                 className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition-colors" title="Modifier la date">
@@ -478,7 +513,6 @@ function DashboardPage() {
                             )}
                           </>
                         )}
-                        {/* Post-achat : jours stock + indicateur devis */}
                         {isPostAchat && (
                           <>
                             {days !== null && (
@@ -491,11 +525,9 @@ function DashboardPage() {
                             </span>
                           </>
                         )}
-                        {/* Vendu : résultat final */}
                         {v.statut === "vendu" && days !== null && (
                           <span className="text-[11px] text-muted">{days}j cycle</span>
                         )}
-                        {/* Lien annonce */}
                         {v.lien_annonce && isPreAchat && (
                           <a href={v.lien_annonce} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                             className="text-primary hover:text-teal-800 transition-colors" title="Voir l'annonce">
@@ -505,7 +537,7 @@ function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Chiffre clé — adapté au statut */}
+                    {/* Chiffre clé */}
                     <div className="text-right shrink-0">
                       {isPreAchat && plafond ? (
                         <div>
@@ -526,19 +558,25 @@ function DashboardPage() {
                         </div>
                       ) : (
                         <div>
-                          <p className="text-sm font-bold tabular-nums">~{coutRep.toLocaleString("fr-FR")} €</p>
-                          <p className="text-[10px] text-muted">{a.defaillances_count} déf.</p>
+                          {/* 5. Données manquantes */}
+                          {missingData ? (
+                            <p className="text-[11px] text-amber-500 font-medium">{missingData}</p>
+                          ) : (
+                            <>
+                              <p className="text-sm font-bold tabular-nums">~{coutRep.toLocaleString("fr-FR")} €</p>
+                              <p className="text-[10px] text-muted">{a.defaillances_count} déf.</p>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    {/* Chevron */}
                     <svg className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
 
-                  {/* Quick price inline form */}
+                  {/* Quick price */}
                   {isQuickPrice && (
                     <div className="px-3 sm:px-4 py-2.5 border-t border-teal-100 bg-teal-50/50 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <span className="text-xs text-teal-700 font-medium shrink-0">
@@ -551,9 +589,7 @@ function DashboardPage() {
                         className="flex-1 px-2.5 py-1.5 rounded-lg border border-teal-200 text-sm tabular-nums focus:border-teal-500 focus:outline-none bg-white" />
                       <span className="text-xs text-muted">€</span>
                       <button onClick={() => submitQuickPrice(v.id, nextStatut!.key)}
-                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors cursor-pointer">
-                        OK
-                      </button>
+                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors cursor-pointer">OK</button>
                       <button onClick={() => setQuickPriceId(null)}
                         className="p-1.5 text-muted hover:text-foreground transition-colors cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -561,7 +597,7 @@ function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Quick date inline form */}
+                  {/* Quick date */}
                   {quickDateId === v.id && (
                     <div className="px-3 sm:px-4 py-2.5 border-t border-blue-100 bg-blue-50/50 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <span className="text-xs text-blue-700 font-medium shrink-0">Date enchère :</span>
@@ -570,14 +606,10 @@ function DashboardPage() {
                         onKeyDown={(e) => { if (e.key === "Enter") submitQuickDate(v.id); if (e.key === "Escape") setQuickDateId(null); }}
                         className="flex-1 px-2.5 py-1.5 rounded-lg border border-blue-200 text-sm focus:border-blue-500 focus:outline-none bg-white" />
                       <button onClick={() => submitQuickDate(v.id)}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer">
-                        OK
-                      </button>
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer">OK</button>
                       {v.date_enchere && (
                         <button onClick={() => { updateVehicle(v.id, { date_enchere: null }); setQuickDateId(null); }}
-                          className="px-2.5 py-1.5 text-xs text-danger hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
-                          Suppr.
-                        </button>
+                          className="px-2.5 py-1.5 text-xs text-danger hover:bg-red-50 rounded-lg transition-colors cursor-pointer">Suppr.</button>
                       )}
                       <button onClick={() => setQuickDateId(null)}
                         className="p-1.5 text-muted hover:text-foreground transition-colors cursor-pointer">
@@ -586,7 +618,7 @@ function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Ligne expansible */}
+                  {/* Expanded */}
                   {isExpanded && (
                     <div className="px-3 sm:px-4 pb-3 pt-1 border-t border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row gap-3 sm:gap-6 text-xs text-muted">
                       <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -599,7 +631,6 @@ function DashboardPage() {
                         {isPreAchat && plafond && <span>Plafond : <strong className="text-teal-700">{plafond.toLocaleString("fr-FR")} €</strong></span>}
                       </div>
                       <div className="flex gap-2 shrink-0 flex-wrap">
-                        {/* Bouton avancer statut */}
                         {nextStatut && v.statut !== "passe" && (
                           <button onClick={(e) => { e.stopPropagation(); handleQuickAdvance(v.id, nextStatut.key, nextStatut.needsPrice); }}
                             className="px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors cursor-pointer">
@@ -629,6 +660,14 @@ function DashboardPage() {
               );
             })}
           </div>
+        )}
+
+        {/* 2. Toggle passés */}
+        {passesCount > 0 && filter === "all" && (
+          <button onClick={() => setShowPasses(!showPasses)}
+            className="w-full mt-4 py-2.5 text-xs text-muted hover:text-foreground transition-colors cursor-pointer text-center">
+            {showPasses ? `Masquer les passés (${passesCount})` : `Voir les passés (${passesCount})`}
+          </button>
         )}
       </main>
     </div>
