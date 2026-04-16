@@ -3,11 +3,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { AnalyseResult } from "@/lib/types";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GraviteBadge } from "@/components/GraviteBadge";
 import { useToast } from "@/components/Toast";
 import { AUCTION_SOURCES, calcMaxAdjudication, calcAuctionFees } from "@/lib/auction-fees";
+
+// PDF (lazy load — la lib est lourde)
+const VehiclePDFLink = dynamic(() => import("@/components/VehiclePDF").then(m => m.VehiclePDFLink), { ssr: false });
 
 const STATUTS = [
   { key: "a_etudier", label: "À étudier", color: "bg-slate-100 text-slate-600" },
@@ -412,10 +416,34 @@ export default function VehicleDetailPage() {
             <span className={`text-xs transition-colors ${saveStatus === "saving" ? "text-muted" : saveStatus === "saved" ? "text-teal-600" : "text-transparent"}`}>
               {saveStatus === "saving" ? "Sauvegarde..." : saveStatus === "saved" ? "✓ Sauvegardé" : "."}
             </span>
-            <button onClick={() => window.print()} className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer no-print" aria-label="Exporter PDF">
+            <VehiclePDFLink
+              data={{
+                vehicule: vehicle.analyses,
+                resultat: resultat,
+                prix_achat: vehicle.prix_achat,
+                prix_revente: vehicle.prix_revente,
+                prix_vente_reel: vehicle.prix_vente_reel,
+                cote_marche: vehicle.cote_marche,
+                source_achat: vehicle.source_achat || "",
+                date_achat: vehicle.date_achat,
+                date_vente: vehicle.date_vente,
+                devis_garage: vehicle.devis_garage,
+                estimation_vyrdict: vehicle.estimation_vyrdict,
+                frais_annexes: vehicle.frais_annexes,
+                statut: vehicle.statut,
+                notes: vehicle.notes || "",
+                notes_acheteur: vehicle.notes_acheteur || "",
+                reparations_selectionnees: vehicle.reparations_selectionnees || [],
+                reparations_faites: vehicle.reparations_faites || [],
+                custom_prices: customPrices,
+                notes_defaillances: notesDefaillances,
+                mode_reparation: vehicle.mode_reparation || "minimum_ct",
+                usage_perso: vehicle.usage_perso === true,
+              }}
+              fileName={`Vyrdict-${vehicle.analyses.marque}-${vehicle.analyses.modele}-${vehicle.analyses.immatriculation || "rapport"}.pdf`}>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
               PDF
-            </button>
+            </VehiclePDFLink>
           </div>
         </div>
       </header>
@@ -597,6 +625,64 @@ export default function VehicleDetailPage() {
                 placeholder="Vendeur pressé, carrosserie impeccable, rayure portière droite..."
                 rows={3}
                 className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors resize-none" />
+            </details>
+
+            {/* Documents */}
+            <details className="group">
+              <summary className="text-sm font-medium text-foreground cursor-pointer flex items-center justify-between py-2">
+                Documents {(vehicle.documents?.length ?? 0) > 0 && <span className="text-xs text-muted font-normal">({vehicle.documents?.length})</span>}
+                <svg className="w-4 h-4 text-slate-300 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div className="mt-2 flex flex-col gap-2">
+                {vehicle.documents && vehicle.documents.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    {vehicle.documents.map((doc) => (
+                      <div key={doc.url} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg text-xs">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 rounded font-bold uppercase">{doc.type}</span>
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-primary hover:underline">{doc.name}</a>
+                        <span className="text-[10px] text-muted">{new Date(doc.uploaded_at).toLocaleDateString("fr-FR")}</span>
+                        <button onClick={async () => {
+                          if (!confirm(`Supprimer "${doc.name}" ?`)) return;
+                          const res = await fetch(`/api/dashboard/${id}/upload-doc`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: doc.url }) });
+                          if (res.ok) {
+                            const { documents } = await res.json();
+                            setVehicle(prev => prev ? { ...prev, documents } : prev);
+                            toast.show("Document supprimé");
+                          }
+                        }} className="text-muted hover:text-danger cursor-pointer" aria-label="Supprimer">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { key: "devis", label: "Devis garage" },
+                    { key: "facture", label: "Facture" },
+                    { key: "carte_grise", label: "Carte grise" },
+                    { key: "contre_visite", label: "Contre-visite" },
+                    { key: "autre", label: "Autre" },
+                  ].map((t) => (
+                    <label key={t.key} className="text-[11px] px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-muted hover:bg-slate-50 cursor-pointer transition-colors">
+                      + {t.label}
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const form = new FormData();
+                        form.append("doc", f);
+                        form.append("type", t.key);
+                        const res = await fetch(`/api/dashboard/${id}/upload-doc`, { method: "POST", body: form });
+                        if (res.ok) {
+                          const { documents } = await res.json();
+                          setVehicle(prev => prev ? { ...prev, documents } : prev);
+                          toast.show("Document ajouté");
+                        }
+                      }} />
+                    </label>
+                  ))}
+                </div>
+              </div>
             </details>
 
             {/* Supprimer */}
