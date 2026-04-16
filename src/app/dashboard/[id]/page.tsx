@@ -41,6 +41,13 @@ interface VehicleData {
   cote_marche: number | null;
   source_cote: string;
   date_cote: string | null;
+  notes_defaillances: Record<string, string> | null;
+  date_vente: string | null;
+  notes_acheteur: string | null;
+  documents: { name: string; url: string; type: string; uploaded_at: string }[] | null;
+  reparations_faites: string[] | null;
+  timeline: { date: string; event: string }[] | null;
+  usage_perso: boolean | null;
   analyses: {
     resultat: AnalyseResult;
     score_sante: number;
@@ -92,6 +99,12 @@ export default function VehicleDetailPage() {
   const [usagePerso, setUsagePerso] = useState(false);
   const [reparationsFaites, setReparationsFaites] = useState<string[]>([]);
   const [timeline, setTimeline] = useState<{ date: string; event: string }[]>([]);
+  const [notesDefaillances, setNotesDefaillances] = useState<Record<string, string>>({});
+  const [dateVente, setDateVente] = useState("");
+  const [notesAcheteur, setNotesAcheteur] = useState("");
+  const [prixVenteReel, setPrixVenteReel] = useState("");
+  const [margeEstimeeAuMomentVente, setMargeEstimeeAuMomentVente] = useState<number | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showAllFields, setShowAllFields] = useState(false);
   const [showFinancier, setShowFinancier] = useState(true);
@@ -134,6 +147,10 @@ export default function VehicleDetailPage() {
         setUsagePerso(data.usage_perso ?? false);
         setReparationsFaites(data.reparations_faites || []);
         setTimeline(data.timeline || []);
+        setNotesDefaillances(data.notes_defaillances || {});
+        setDateVente(data.date_vente || "");
+        setNotesAcheteur(data.notes_acheteur || "");
+        setPrixVenteReel(data.prix_vente_reel?.toString() || "");
       }
       setLoading(false);
     })();
@@ -211,6 +228,31 @@ export default function VehicleDetailPage() {
   // Delta vs plafond (post-achat)
   const deltaPlafond = plafondAdjudication !== null && achat > 0 ? plafondAdjudication - achat : null;
 
+  // Précision Vyrdict vs devis garage réel
+  const ecartEstimationDevis = useMemo(() => {
+    const devisReel = devisGarage ? parseFloat(devisGarage) : null;
+    if (!devisReel || devisReel <= 0 || estimationSelectionnees <= 0) return null;
+    const ecart = devisReel - estimationSelectionnees;
+    const pct = Math.round((ecart / estimationSelectionnees) * 100);
+    return { ecart, pct, devisReel };
+  }, [devisGarage, estimationSelectionnees]);
+
+  // Bilan vente : marge réelle vs estimée
+  const margeReelle = useMemo(() => {
+    const venteReel = prixVenteReel ? parseFloat(prixVenteReel) : 0;
+    if (!venteReel || venteReel <= 0 || achat <= 0) return null;
+    const stock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) * (parseFloat(coutStockageJour) || 0) : 0;
+    const tva = tvaSurMarge && venteReel > achat ? Math.round((venteReel - achat) * 0.2) : 0;
+    return venteReel - achat - coutReparations - frais - stock - tva;
+  }, [prixVenteReel, achat, coutReparations, frais, dateAchat, coutStockageJour, tvaSurMarge]);
+
+  const ecartMarge = useMemo(() => {
+    if (margeReelle === null || margeNette === null) return null;
+    const diff = margeReelle - margeNette;
+    const pct = margeNette !== 0 ? Math.round((diff / Math.abs(margeNette)) * 100) : 0;
+    return { diff, pct };
+  }, [margeReelle, margeNette]);
+
   // Synchro estimation
   useEffect(() => {
     if (vehicle && estimationSelectionnees > 0) {
@@ -259,6 +301,29 @@ export default function VehicleDetailPage() {
     setReparationsFaites(updated);
     save({ reparations_faites: updated });
   }, [reparationsFaites, save]);
+
+  // Note par défaillance
+  const updateNoteDefaillance = useCallback((key: string, value: string) => {
+    const updated = { ...notesDefaillances, [key]: value };
+    if (!value) delete updated[key];
+    setNotesDefaillances(updated);
+    save({ notes_defaillances: updated });
+  }, [notesDefaillances, save]);
+
+  // Duplication véhicule
+  const duplicateVehicle = useCallback(async () => {
+    if (duplicating) return;
+    setDuplicating(true);
+    const res = await fetch(`/api/dashboard/${id}/duplicate`, { method: "POST" });
+    if (res.ok) {
+      const { id: newId } = await res.json();
+      toast.show("Véhicule dupliqué !");
+      router.push(`/dashboard/${newId}`);
+    } else {
+      toast.show("Erreur de duplication");
+      setDuplicating(false);
+    }
+  }, [id, duplicating, router, toast]);
 
   // Re-scan CT
   const handleRescan = useCallback(async (f: File) => {
@@ -475,7 +540,8 @@ export default function VehicleDetailPage() {
                       <input type="checkbox" checked={d.selected} onChange={() => toggleDefaillance(d.code)} className="w-4 h-4 accent-primary rounded shrink-0" />
                       <GraviteBadge gravite={d.gravite} small />
                       <span className={`flex-1 text-sm font-medium ${isFaite ? "line-through text-emerald-600" : d.selected ? "" : "line-through"}`}>{d.libelle}</span>
-                      {/* Bouton "fait" — post-achat uniquement */}
+                      {/* Indicateur note + bouton fait */}
+                      {notesDefaillances[key] && <span className="text-[10px] text-blue-500" title="Note présente">✏</span>}
                       {(isPostAchat || isVendu) && d.selected && (
                         <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRepFaite(key); }}
                           className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer shrink-0 ${isFaite ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"}`}>
@@ -502,6 +568,13 @@ export default function VehicleDetailPage() {
                         {d.cout_piece && <span className="px-2 py-0.5 bg-slate-50 rounded inline-block w-fit">{d.cout_piece}</span>}
                         {d.cout_main_oeuvre && <span className="px-2 py-0.5 bg-slate-50 rounded inline-block w-fit">{d.cout_main_oeuvre}</span>}
                         <span>Fourchette : {d.cout_min}-{d.cout_max} € — Estimation : ~{estimation} €</span>
+                        {/* Note par défaillance */}
+                        <textarea value={notesDefaillances[key] || ""}
+                          onChange={(e) => setNotesDefaillances({ ...notesDefaillances, [key]: e.target.value })}
+                          onBlur={() => updateNoteDefaillance(key, notesDefaillances[key] || "")}
+                          placeholder="Ex: Fait le 12/04 chez Garage Martin, 320€..."
+                          rows={2}
+                          className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:border-primary focus:outline-none transition-colors resize-none" />
                       </div>
                     )}
                   </div>
@@ -545,12 +618,20 @@ export default function VehicleDetailPage() {
               </details>
             )}
 
-            {/* 6. Supprimer sécurisé */}
-            {!confirmDelete ? (
-              <button onClick={() => setConfirmDelete(true)} className="text-xs text-muted hover:text-danger transition-colors cursor-pointer text-left">
-                Supprimer ce véhicule
+            {/* Actions véhicule : dupliquer + supprimer */}
+            <div className="flex items-center gap-3 text-xs">
+              <button onClick={duplicateVehicle} disabled={duplicating}
+                className="text-muted hover:text-primary transition-colors cursor-pointer disabled:opacity-50">
+                {duplicating ? "Duplication..." : "Dupliquer ce véhicule"}
               </button>
-            ) : (
+              <span className="text-slate-200">|</span>
+              {!confirmDelete ? (
+                <button onClick={() => setConfirmDelete(true)} className="text-muted hover:text-danger transition-colors cursor-pointer">
+                  Supprimer
+                </button>
+              ) : null}
+            </div>
+            {confirmDelete && (
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200/50 rounded-xl">
                 <span className="text-xs text-danger font-medium">Confirmer la suppression ?</span>
                 <button onClick={async () => {
@@ -616,13 +697,18 @@ export default function VehicleDetailPage() {
               </div>
             )}
 
-            {isVendu && !usagePerso && margeNette !== null && (
-              <div className={`p-5 rounded-2xl shadow-sm border ${margeNette >= 0 ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
-                <p className="text-xs text-muted font-medium mb-1">Bilan final</p>
-                <p className={`text-3xl font-black tabular-nums ${margeNette >= 0 ? "text-green-600" : "text-danger"}`}>
-                  {margeNette >= 0 ? "+" : ""}{margeNette.toLocaleString("fr-FR")} €
+            {isVendu && !usagePerso && (margeNette !== null || margeReelle !== null) && (
+              <div className={`p-5 rounded-2xl shadow-sm border ${(margeReelle ?? margeNette ?? 0) >= 0 ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50" : "bg-gradient-to-br from-red-50 to-orange-50 border-red-200/50"}`}>
+                <p className="text-xs text-muted font-medium mb-1">{margeReelle !== null ? "Marge réelle" : "Bilan final"}</p>
+                <p className={`text-3xl font-black tabular-nums ${(margeReelle ?? margeNette ?? 0) >= 0 ? "text-green-600" : "text-danger"}`}>
+                  {(margeReelle ?? margeNette ?? 0) >= 0 ? "+" : ""}{(margeReelle ?? margeNette ?? 0).toLocaleString("fr-FR")} €
                 </p>
                 {rendement !== null && <p className="text-xs text-muted mt-1">Rendement : {rendement}% — {joursStock}j de cycle</p>}
+                {ecartMarge && (
+                  <p className={`text-xs font-medium mt-1 ${ecartMarge.diff >= 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {ecartMarge.diff >= 0 ? "+" : ""}{ecartMarge.diff.toLocaleString("fr-FR")} € vs estimation ({ecartMarge.pct >= 0 ? "+" : ""}{ecartMarge.pct}%)
+                  </p>
+                )}
               </div>
             )}
 
@@ -753,6 +839,11 @@ export default function VehicleDetailPage() {
                       <span className="text-sm text-muted">€</span>
                     </div>
                     {!devisGarage && <p className="text-[10px] text-muted mt-0.5">Estimation Vyrdict : ~{estimationSelectionnees} €</p>}
+                    {ecartEstimationDevis && (
+                      <p className={`text-[10px] mt-0.5 font-medium ${Math.abs(ecartEstimationDevis.pct) <= 15 ? "text-teal-600" : Math.abs(ecartEstimationDevis.pct) <= 30 ? "text-amber-600" : "text-danger"}`}>
+                        Vyrdict : ~{estimationSelectionnees} € → écart {ecartEstimationDevis.pct >= 0 ? "+" : ""}{ecartEstimationDevis.pct}% ({ecartEstimationDevis.ecart >= 0 ? "+" : ""}{ecartEstimationDevis.ecart.toLocaleString("fr-FR")} €)
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -948,6 +1039,37 @@ export default function VehicleDetailPage() {
                           className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
                         <span className="text-sm text-muted">€/j</span>
                       </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Vente — uniquement pour vendu */}
+                {(statut === "vendu" || statut === "en_vente" || showAllFields) && !usagePerso && (
+                  <>
+                    <div className="pt-3 border-t border-slate-100">
+                      <label className="text-xs text-muted font-medium">Prix de vente réel</label>
+                      <div className="flex items-center gap-1 mt-1">
+                        <input type="number" inputMode="numeric" value={prixVenteReel}
+                          onChange={(e) => setPrixVenteReel(e.target.value)}
+                          onBlur={() => save({ prix_vente_reel: prixVenteReel ? parseFloat(prixVenteReel) : null })}
+                          placeholder={prixRevente || "9 000"}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
+                        <span className="text-sm text-muted">€</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted">Date de vente</label>
+                      <input type="date" value={dateVente} onChange={(e) => setDateVente(e.target.value)}
+                        onBlur={() => save({ date_vente: dateVente || null })}
+                        className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted">Notes acheteur</label>
+                      <textarea value={notesAcheteur} onChange={(e) => setNotesAcheteur(e.target.value)}
+                        onBlur={() => save({ notes_acheteur: notesAcheteur })}
+                        placeholder="Particulier de Bordeaux, vu via LeBonCoin, payé comptant..."
+                        rows={2}
+                        className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors resize-none" />
                     </div>
                   </>
                 )}

@@ -41,6 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     "tva_sur_marge", "marge_minimum", "frais_enchere_pct", "frais_enchere_fixes", "mode_enchere", "date_enchere",
     "cote_marche", "source_cote", "date_cote", "usage_perso",
     "reparations_faites", "timeline",
+    "notes_defaillances", "date_vente", "notes_acheteur", "documents",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
