@@ -100,10 +100,9 @@ function getEnchereBadge(dateStr: string | null): { label: string; color: string
 function getMargeNette(v: VehicleRow): number | null {
   if (!v.prix_achat || !v.prix_revente) return null;
   const rep = v.devis_reel || v.devis_garage || v.estimation_vyrdict || 0;
-  const frais = v.frais_annexes ?? 350;
-  const stock = v.date_achat ? (daysSince(v.date_achat) || 0) * (v.cout_stockage_jour || 0) : 0;
+  const frais = v.frais_annexes ?? 0;
   const tva = (v.tva_sur_marge === true) && v.prix_revente > v.prix_achat ? Math.round((v.prix_revente - v.prix_achat) * 0.2) : 0;
-  return v.prix_revente - v.prix_achat - rep - frais - stock - tva;
+  return v.prix_revente - v.prix_achat - rep - frais - tva;
 }
 
 function getPlafond(v: VehicleRow): number | null {
@@ -651,12 +650,6 @@ function DashboardPage() {
                             {days !== null && (
                               <span className={`text-[11px] font-medium ${days > 60 ? "text-danger" : days > 45 ? "text-amber-600" : "text-muted"}`}>
                                 {days}j stock
-                              </span>
-                            )}
-                            {/* Coût stockage visible si > 30j */}
-                            {days !== null && days > 30 && v.cout_stockage_jour > 0 && (
-                              <span className="text-[11px] text-amber-600 font-medium">
-                                -{(days * v.cout_stockage_jour).toLocaleString("fr-FR")} € stock
                               </span>
                             )}
                             <span className={`text-[11px] ${hasDevisReel ? "text-teal-600" : "text-amber-500"}`}>

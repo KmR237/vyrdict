@@ -256,13 +256,12 @@ export default function VehicleDetailPage() {
   const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const frais = totalExpenses;
   const joursStock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-  const coutStock = joursStock * (parseFloat(coutStockageJour) || 0);
   const tvaMarge = tvaRegime === "tva_sur_marge" && revente > 0 && achat > 0 && revente > achat
     ? Math.round(Math.max(0, revente - achat) * 0.2 / 1.2)
     : tvaRegime === "tva_normale" && revente > 0
     ? Math.round(revente * 0.2 / 1.2)
     : 0;
-  const margeBrute = revente > 0 && achat > 0 ? revente - achat - coutReparations - frais - coutStock : null;
+  const margeBrute = revente > 0 && achat > 0 ? revente - achat - coutReparations - frais : null;
   const margeNette = margeBrute !== null ? margeBrute - tvaMarge : null;
   const rendement = margeNette !== null && achat > 0 ? Math.round((margeNette / achat) * 100) : null;
 
@@ -293,10 +292,9 @@ export default function VehicleDetailPage() {
   const margeReelle = useMemo(() => {
     const venteReel = prixVenteReel ? parseFloat(prixVenteReel) : 0;
     if (!venteReel || venteReel <= 0 || achat <= 0) return null;
-    const stock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) * (parseFloat(coutStockageJour) || 0) : 0;
     const tva = tvaSurMarge && venteReel > achat ? Math.round((venteReel - achat) * 0.2) : 0;
-    return venteReel - achat - coutReparations - frais - stock - tva;
-  }, [prixVenteReel, achat, coutReparations, frais, dateAchat, coutStockageJour, tvaSurMarge]);
+    return venteReel - achat - coutReparations - frais - tva;
+  }, [prixVenteReel, achat, coutReparations, frais, tvaSurMarge]);
 
   const ecartMarge = useMemo(() => {
     if (margeReelle === null || margeNette === null) return null;
@@ -934,7 +932,7 @@ export default function VehicleDetailPage() {
                 )}
                 {joursStock > 0 && (
                   <p className={`text-xs mt-1 ${joursStock > 60 ? "text-danger font-medium" : joursStock > 45 ? "text-amber-600 font-medium" : "text-muted"}`}>
-                    {joursStock}j en stock{coutStock > 0 ? ` — coût : ${coutStock.toLocaleString("fr-FR")} €` : ""}
+                    {joursStock}j en stock
                   </p>
                 )}
               </div>
@@ -1047,9 +1045,6 @@ export default function VehicleDetailPage() {
                       )}
                       {frais > 0 && (
                         <div className="flex justify-between"><span>− Frais</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
-                      )}
-                      {coutStock > 0 && (
-                        <div className="flex justify-between"><span>− Stockage ({joursStock}j)</span><span className="font-semibold tabular-nums text-amber-600">−{coutStock.toLocaleString("fr-FR")} €</span></div>
                       )}
                       {tvaMarge > 0 && (
                         <div className="flex justify-between"><span>− TVA marge (20%)</span><span className="font-semibold tabular-nums text-danger">−{tvaMarge.toLocaleString("fr-FR")} €</span></div>
@@ -1291,16 +1286,6 @@ export default function VehicleDetailPage() {
                       <input type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)}
                         onBlur={() => save({ date_achat: dateAchat || null })}
                         className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted">Coût stockage / jour</label>
-                      <div className="flex items-center gap-1 mt-1">
-                        <input type="number" inputMode="numeric" value={coutStockageJour}
-                          onChange={(e) => { setCoutStockageJour(e.target.value); saveDebounced({ cout_stockage_jour: parseFloat(e.target.value) || 0 }); }}
-                          onBlur={() => save({ cout_stockage_jour: parseFloat(coutStockageJour) || 12 })}
-                          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
-                        <span className="text-sm text-muted">€/j</span>
-                      </div>
                     </div>
                   </>
                 )}
