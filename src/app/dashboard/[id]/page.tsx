@@ -182,8 +182,21 @@ export default function VehicleDetailPage() {
         setSourceCote(data.source_cote || "");
         setDateCote(data.date_cote || "");
         setUsagePerso(data.usage_perso ?? false);
-        setVin(data.vin || "");
-        setSellerName(data.seller_name || "");
+        // VIN : prioriser vehicles.vin, sinon lire depuis le résultat CT
+        const vinFromAnalyse = data.analyses?.resultat?.vehicule?.vin || "";
+        const vinFinal = data.vin || vinFromAnalyse;
+        setVin(vinFinal);
+        // Auto-sync : si le VIN est dans l'analyse mais pas dans vehicles, le copier
+        if (!data.vin && vinFromAnalyse) {
+          fetch(`/api/dashboard/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ vin: vinFromAnalyse }) });
+        }
+        // Vendeur : pré-remplir depuis la source si vide
+        const sourceLabels: Record<string, string> = { alcopa: "Alcopa Auction", bca: "BCA", vpauto: "VPAuto", interencheres: "Interenchères", encheres_vo: "Enchères VO", capcar: "CapCar Pro", planete_auto: "Planète Auto" };
+        const sellerFinal = data.seller_name || (data.source_achat && sourceLabels[data.source_achat]) || "";
+        setSellerName(sellerFinal);
+        if (!data.seller_name && sellerFinal) {
+          fetch(`/api/dashboard/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ seller_name: sellerFinal }) });
+        }
         setSellerContact(data.seller_contact || "");
         setBuyerName(data.buyer_name || "");
         setBuyerContact(data.buyer_contact || "");
