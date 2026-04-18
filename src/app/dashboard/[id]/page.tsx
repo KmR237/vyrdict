@@ -1190,9 +1190,12 @@ export default function VehicleDetailPage() {
             </div>
 
             {/* ── Achat & vente (réorganisé) ── */}
-            <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-3">Achat &amp; vente</h3>
-              <div className="flex flex-col gap-3">
+            <details open className="bg-white rounded-2xl border border-slate-200/60 shadow-sm group">
+              <summary className="p-4 text-sm font-bold cursor-pointer flex items-center justify-between">
+                Achat &amp; vente
+                <svg className="w-4 h-4 text-slate-300 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div className="px-4 pb-4 flex flex-col gap-3">
                 {/* Source + vendeur groupés */}
                 <div>
                   <label className="text-xs text-muted">Source</label>
@@ -1343,7 +1346,7 @@ export default function VehicleDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </details>
 
             {/* ── Frais détaillés ── */}
             <details className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
