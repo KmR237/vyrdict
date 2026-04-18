@@ -11,6 +11,7 @@ interface VehicleRow {
   seller_name: string | null;
   buyer_name: string | null;
   date_vente: string | null;
+  usage_perso: boolean | null;
   analyses: {
     marque: string;
     modele: string;
@@ -42,7 +43,7 @@ export default function LivrePolicePage() {
 
   const filtered = useMemo(() => {
     return vehicles
-      .filter((v) => v.statut !== "passe")
+      .filter((v) => v.statut !== "passe" && !v.usage_perso)
       .filter((v) => {
         if (dateFrom && v.created_at < dateFrom) return false;
         if (dateTo && v.created_at > dateTo + "T23:59:59") return false;
