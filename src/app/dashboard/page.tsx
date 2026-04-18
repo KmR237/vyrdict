@@ -575,7 +575,7 @@ function DashboardPage() {
                         <span className="text-xs text-muted">{a.annee}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${statut.color}`}>{statut.label}</span>
                         {isPerso && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">Perso</span>}
-                        {enchereBadge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${enchereBadge.color}`}>{enchereBadge.label}</span>}
+                        {isPreAchat && enchereBadge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${enchereBadge.color}`}>{enchereBadge.label}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {v.source_achat && SOURCE_LABELS[v.source_achat] && (
