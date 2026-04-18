@@ -76,9 +76,12 @@ export default function ScanProPage() {
 
       if (saveRes.ok) {
         const { vehicle_id } = await saveRes.json();
+        // Upload du CT AVANT la navigation
         const uploadForm = new FormData();
         uploadForm.append("ctFile", f);
-        fetch(`/api/dashboard/${vehicle_id}/upload-ct`, { method: "POST", body: uploadForm }).catch(() => {});
+        try {
+          await fetch(`/api/dashboard/${vehicle_id}/upload-ct`, { method: "POST", body: uploadForm });
+        } catch { /* silently continue */ }
         router.push(`/dashboard/${vehicle_id}`);
       } else {
         router.push("/dashboard");
