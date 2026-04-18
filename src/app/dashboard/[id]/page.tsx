@@ -497,6 +497,74 @@ export default function VehicleDetailPage() {
       </header>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
+        {/* ═══ A. VERDICT CT — bandeau en haut, full width ═══ */}
+        <div className={`rounded-2xl p-4 mb-6 border ${
+          a.score_sante >= 70 ? "bg-emerald-50 border-emerald-200/50" :
+          a.score_sante >= 40 ? "bg-amber-50 border-amber-200/50" :
+          "bg-red-50 border-red-200/50"
+        }`}>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <ScoreGauge score={a.score_sante} size="sm" />
+              <div>
+                <p className={`text-sm font-bold ${
+                  a.score_sante >= 70 ? "text-emerald-700" :
+                  a.score_sante >= 40 ? "text-amber-700" :
+                  "text-red-700"
+                }`}>
+                  {a.score_sante >= 70 ? "Bon état général" :
+                   a.score_sante >= 40 ? "Réparations nécessaires" :
+                   "État préoccupant"}
+                </p>
+                <p className="text-xs text-muted mt-0.5">
+                  {resultat.defaillances.filter(d => d.gravite === "critique").length > 0 && `${resultat.defaillances.filter(d => d.gravite === "critique").length} critique · `}
+                  {resultat.defaillances.filter(d => d.gravite === "majeur").length > 0 && `${resultat.defaillances.filter(d => d.gravite === "majeur").length} majeur · `}
+                  {resultat.defaillances.filter(d => d.gravite === "mineur").length > 0 && `${resultat.defaillances.filter(d => d.gravite === "mineur").length} mineur · `}
+                  ~{Math.round((a.cout_total_min + a.cout_total_max) / 2).toLocaleString("fr-FR")} €
+                </p>
+              </div>
+            </div>
+            {/* E. Lien annonce en haut */}
+            <div className="flex items-center gap-2">
+              {lienAnnonce ? (
+                <a href={lienAnnonce} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  Annonce
+                </a>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <input type="url" value={lienAnnonce} onChange={(e) => setLienAnnonce(e.target.value)}
+                    onBlur={() => save({ lien_annonce: lienAnnonce })}
+                    placeholder="+ Lien annonce"
+                    className="text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white/50 w-32 focus:w-48 transition-all focus:border-primary focus:outline-none" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* B. Résumé défaillances par gravité */}
+        {resultat.defaillances.length > 0 && (
+          <div className="flex gap-3 mb-6 overflow-x-auto pb-1">
+            {[
+              { key: "critique", label: "Critiques", color: "text-red-700 bg-red-50 border-red-200/50" },
+              { key: "majeur", label: "Majeures", color: "text-amber-700 bg-amber-50 border-amber-200/50" },
+              { key: "mineur", label: "Mineures", color: "text-blue-700 bg-blue-50 border-blue-200/50" },
+            ].map(g => {
+              const defs = resultat.defaillances.filter(d => d.gravite === g.key);
+              if (defs.length === 0) return null;
+              const cout = defs.reduce((s, d) => s + (d.cout_moyen || Math.round((d.cout_min + d.cout_max) / 2)), 0);
+              return (
+                <div key={g.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border shrink-0 ${g.color}`}>
+                  <span className="font-black tabular-nums">{defs.length}</span>
+                  <span className="text-xs font-medium">{g.label}</span>
+                  <span className="text-xs tabular-nums opacity-75">~{cout.toLocaleString("fr-FR")} €</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
 
           {/* ═══ COLONNE GAUCHE — Analyse CT ═══ */}
@@ -548,8 +616,8 @@ export default function VehicleDetailPage() {
               </div>
             </div>
 
-            {/* 2. Checklist pré-achat */}
-            {checklistPreAchat && checklistPreAchat.done < checklistPreAchat.total && (
+            {/* 2. Checklist pré-achat — après le bloc photo, pas en premier */}
+            {checklistPreAchat && checklistPreAchat.done < checklistPreAchat.total && checklistPreAchat.done > 0 && (
               <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200/50 rounded-xl">
                 <span className="text-xs font-bold text-amber-700 tabular-nums">{checklistPreAchat.done}/{checklistPreAchat.total}</span>
                 <div className="flex-1 flex flex-wrap gap-2">
@@ -783,6 +851,35 @@ export default function VehicleDetailPage() {
 
           {/* ═══ COLONNE DROITE — Rentabilité ═══ */}
           <div className="flex flex-col gap-4 order-1 lg:order-2">
+
+            {/* ── D. Prompt intention — uniquement pour les nouveaux véhicules ── */}
+            {statut === "a_etudier" && !prixAchat && !prixRevente && !sourceAchat && (
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+                <p className="text-sm font-bold mb-3">Que souhaitez-vous faire ?</p>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => { setShowFinancier(true); save({ statut: "a_negocier" }, "Mode revente"); setStatut("a_negocier"); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:bg-teal-50 hover:border-teal-200 transition-colors cursor-pointer text-left">
+                    <span className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">Achat pour revente</p>
+                      <p className="text-[11px] text-muted">Calculer le plafond d&apos;enchère et la marge</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setUsagePerso(true); save({ usage_perso: true, statut: "a_negocier" }, "Mode personnel"); setStatut("a_negocier"); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:bg-violet-50 hover:border-violet-200 transition-colors cursor-pointer text-left">
+                    <span className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-violet-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">Achat personnel</p>
+                      <p className="text-[11px] text-muted">Calculer le budget max tout compris</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── A. CHIFFRE CLÉ — adapté au statut + usage ── */}
             {isPreAchat && plafondAdjudication !== null && plafondAdjudication > 0 && (
