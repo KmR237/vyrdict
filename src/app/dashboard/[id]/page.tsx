@@ -1373,38 +1373,45 @@ export default function VehicleDetailPage() {
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2 items-end">
-                  <select value={newExpenseCategory} onChange={(e) => setNewExpenseCategory(e.target.value)}
-                    className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white cursor-pointer">
-                    <option value="transport">Transport</option>
-                    <option value="remise_en_etat">Remise en état</option>
-                    <option value="controle_technique">CT</option>
-                    <option value="carte_grise">Carte grise</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                  <input type="number" inputMode="numeric" value={newExpenseAmount}
-                    onChange={(e) => setNewExpenseAmount(e.target.value)}
-                    placeholder="Montant"
-                    className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-xs tabular-nums" />
-                  <input type="text" value={newExpenseDesc}
-                    onChange={(e) => setNewExpenseDesc(e.target.value)}
-                    placeholder="Description..."
-                    className="flex-1 px-2 py-1.5 rounded-lg border border-slate-200 text-xs" />
-                  <button onClick={async () => {
-                    if (!newExpenseAmount) return;
-                    const res = await fetch(`/api/dashboard/${id}/expenses`, {
-                      method: "POST", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ category: newExpenseCategory, amount: parseFloat(newExpenseAmount), description: newExpenseDesc }),
-                    });
-                    if (res.ok) {
-                      const expRes = await fetch(`/api/dashboard/${id}/expenses`);
-                      if (expRes.ok) setExpenses(await expRes.json());
-                      setNewExpenseAmount(""); setNewExpenseDesc("");
-                      toast.show("Frais ajouté");
-                    }
-                  }} className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 cursor-pointer shrink-0">
-                    +
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <select value={newExpenseCategory} onChange={(e) => setNewExpenseCategory(e.target.value)}
+                      className="text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white cursor-pointer flex-1">
+                      <option value="transport">Transport</option>
+                      <option value="remise_en_etat">Remise en état</option>
+                      <option value="controle_technique">CT</option>
+                      <option value="carte_grise">Carte grise</option>
+                      <option value="autre">Autre</option>
+                    </select>
+                    <div className="flex items-center gap-1">
+                      <input type="number" inputMode="numeric" value={newExpenseAmount}
+                        onChange={(e) => setNewExpenseAmount(e.target.value)}
+                        placeholder="Montant"
+                        className="w-24 px-2 py-2 rounded-lg border border-slate-200 text-xs tabular-nums" />
+                      <span className="text-xs text-muted">€</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input type="text" value={newExpenseDesc}
+                      onChange={(e) => setNewExpenseDesc(e.target.value)}
+                      placeholder="Description (optionnel)..."
+                      className="flex-1 px-2 py-2 rounded-lg border border-slate-200 text-xs" />
+                    <button onClick={async () => {
+                      if (!newExpenseAmount) return;
+                      const res = await fetch(`/api/dashboard/${id}/expenses`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ category: newExpenseCategory, amount: parseFloat(newExpenseAmount), description: newExpenseDesc }),
+                      });
+                      if (res.ok) {
+                        const expRes = await fetch(`/api/dashboard/${id}/expenses`);
+                        if (expRes.ok) setExpenses(await expRes.json());
+                        setNewExpenseAmount(""); setNewExpenseDesc("");
+                        toast.show("Frais ajouté");
+                      }
+                    }} className="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 cursor-pointer shrink-0">
+                      Ajouter
+                    </button>
+                  </div>
                 </div>
               </div>
             </details>

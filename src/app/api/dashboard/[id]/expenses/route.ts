@@ -31,10 +31,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const supabase = createServerClient();
   const body = await request.json();
 
-  const { date, category, amount, description } = body;
+  const { category, amount, description } = body;
+  const date = body.date || new Date().toISOString().slice(0, 10);
 
-  if (!date || !category || amount == null) {
-    return NextResponse.json({ error: "Champs requis : date, category, amount." }, { status: 400 });
+  if (!category || amount == null) {
+    return NextResponse.json({ error: "Champs requis : category, amount." }, { status: 400 });
   }
 
   if (!ALLOWED_CATEGORIES.includes(category)) {
