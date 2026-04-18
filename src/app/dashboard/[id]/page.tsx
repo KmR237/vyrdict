@@ -589,6 +589,7 @@ export default function VehicleDetailPage() {
               <div>
                 <p className="text-2xl font-black tabular-nums">~{Math.round((a.cout_total_min + a.cout_total_max) / 2).toLocaleString("fr-FR")} €</p>
                 <p className="text-xs text-muted">{a.defaillances_count} défaillances{a.code_postal && ` — CP ${a.code_postal}`}</p>
+                {vin && <p className="text-[10px] text-muted font-mono tracking-wider mt-0.5">{vin}</p>}
                 {vehicle.ct_file_url ? (
                   <a href={vehicle.ct_file_url} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline font-medium mt-1 inline-flex items-center gap-1">
@@ -1185,17 +1186,17 @@ export default function VehicleDetailPage() {
               </div>}
             </div>
 
-            {/* ── E. Source + enchère (groupé, lié au plafond) ── */}
+            {/* ── Achat & vente (réorganisé) ── */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-              <h3 className="font-bold text-sm mb-3">{isPreAchat ? "Enchère / Achat" : "Informations achat"}</h3>
+              <h3 className="font-bold text-sm mb-3">Achat &amp; vente</h3>
               <div className="flex flex-col gap-3">
+                {/* Source + vendeur groupés */}
                 <div>
                   <label className="text-xs text-muted">Source</label>
                   <select value={sourceAchat} onChange={(e) => {
                     const v = e.target.value;
                     setSourceAchat(v);
                     const updates: Record<string, unknown> = { source_achat: v };
-                    // Pré-remplir le vendeur si vide
                     if (!sellerName && v) {
                       const labels: Record<string, string> = { alcopa: "Alcopa Auction", bca: "BCA", vpauto: "VPAuto", interencheres: "Interenchères", encheres_vo: "Enchères VO", capcar: "CapCar Pro", planete_auto: "Planète Auto" };
                       if (labels[v]) { setSellerName(labels[v]); updates.seller_name = labels[v]; }
@@ -1233,6 +1234,30 @@ export default function VehicleDetailPage() {
                   )}
                 </div>
 
+                {/* Vendeur — juste sous la source */}
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" value={sellerName}
+                    onChange={(e) => setSellerName(e.target.value)}
+                    onBlur={() => save({ seller_name: sellerName })}
+                    placeholder="Nom du vendeur"
+                    className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
+                  <input type="text" value={sellerContact}
+                    onChange={(e) => setSellerContact(e.target.value)}
+                    onBlur={() => save({ seller_contact: sellerContact })}
+                    placeholder="Contact vendeur"
+                    className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
+                </div>
+
+                {/* VIN — toujours visible */}
+                <div>
+                  <label className="text-xs text-muted">VIN</label>
+                  <input type="text" value={vin} maxLength={17}
+                    onChange={(e) => setVin(e.target.value.toUpperCase())}
+                    onBlur={() => save({ vin })}
+                    placeholder="WVWZZZ3CZWE123456"
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono tracking-wider focus:border-primary focus:outline-none" />
+                </div>
+
                 {/* Date enchère — pré-achat */}
                 {(isPreAchat || showAllFields || !!dateEnchere) && (
                   <div>
@@ -1240,7 +1265,6 @@ export default function VehicleDetailPage() {
                     <input type="datetime-local" value={dateEnchere} onChange={(e) => setDateEnchere(e.target.value)}
                       onBlur={() => {
                         if (!dateEnchere) { save({ date_enchere: null }); return; }
-                        // Ajouter le timezone offset local pour que Supabase stocke la bonne heure
                         const offset = new Date().getTimezoneOffset();
                         const sign = offset <= 0 ? "+" : "-";
                         const hh = Math.floor(Math.abs(offset) / 60).toString().padStart(2, "0");
@@ -1251,26 +1275,10 @@ export default function VehicleDetailPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="text-xs text-muted">Lien annonce</label>
-                  <div className="flex gap-2 mt-1">
-                    <input type="url" value={lienAnnonce} onChange={(e) => setLienAnnonce(e.target.value)}
-                      onBlur={() => save({ lien_annonce: lienAnnonce })}
-                      placeholder="https://..."
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors" />
-                    {lienAnnonce && (
-                      <a href={lienAnnonce} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-primary hover:bg-teal-50 transition-colors flex items-center">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </a>
-                    )}
-                  </div>
-                </div>
-
                 {/* Date achat + stockage — post-achat */}
                 {(isPostAchat || isVendu || showAllFields || !!dateAchat) && (
                   <>
-                    <div>
+                    <div className="pt-3 border-t border-slate-100">
                       <label className="text-xs text-muted">Date d&apos;achat</label>
                       <input type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)}
                         onBlur={() => save({ date_achat: dateAchat || null })}
@@ -1289,11 +1297,26 @@ export default function VehicleDetailPage() {
                   </>
                 )}
 
-                {/* Vente — uniquement pour vendu */}
+                {/* ── Acheteur — visible en vente / vendu ── */}
                 {(statut === "vendu" || statut === "en_vente" || showAllFields) && !usagePerso && (
                   <>
                     <div className="pt-3 border-t border-slate-100">
-                      <label className="text-xs text-muted font-medium">Prix de vente réel</label>
+                      <label className="text-xs text-muted font-medium">Acheteur</label>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <input type="text" value={buyerName}
+                          onChange={(e) => setBuyerName(e.target.value)}
+                          onBlur={() => save({ buyer_name: buyerName })}
+                          placeholder="Nom de l'acheteur"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
+                        <input type="text" value={buyerContact}
+                          onChange={(e) => setBuyerContact(e.target.value)}
+                          onBlur={() => save({ buyer_contact: buyerContact })}
+                          placeholder="Contact"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted">Prix de vente réel</label>
                       <div className="flex items-center gap-1 mt-1">
                         <input type="number" inputMode="numeric" value={prixVenteReel}
                           onChange={(e) => { setPrixVenteReel(e.target.value); saveDebounced({ prix_vente_reel: e.target.value ? parseFloat(e.target.value) : null }); }}
@@ -1313,7 +1336,7 @@ export default function VehicleDetailPage() {
                       <label className="text-xs text-muted">Notes acheteur</label>
                       <textarea value={notesAcheteur} onChange={(e) => setNotesAcheteur(e.target.value)}
                         onBlur={() => save({ notes_acheteur: notesAcheteur })}
-                        placeholder="Particulier de Bordeaux, vu via LeBonCoin, payé comptant..."
+                        placeholder="Particulier de Bordeaux, vu via LeBonCoin..."
                         rows={2}
                         className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none transition-colors resize-none" />
                     </div>
@@ -1328,52 +1351,6 @@ export default function VehicleDetailPage() {
                 )}
               </div>
             </div>
-
-            {/* ── Identité véhicule + parties ── */}
-            <details className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
-              <summary className="p-4 text-sm font-bold cursor-pointer flex items-center justify-between">
-                Identité et parties
-                <svg className="w-4 h-4 text-slate-300 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </summary>
-              <div className="px-4 pb-4 flex flex-col gap-3">
-                <div>
-                  <label className="text-xs text-muted">VIN (N° de série)</label>
-                  <input type="text" value={vin} maxLength={17}
-                    onChange={(e) => setVin(e.target.value.toUpperCase())}
-                    onBlur={() => save({ vin })}
-                    placeholder="WVWZZZ3CZWE123456"
-                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono tracking-wider focus:border-primary focus:outline-none" />
-                </div>
-                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-                  <div>
-                    <label className="text-xs text-muted font-medium">Vendeur</label>
-                    <input type="text" value={sellerName}
-                      onChange={(e) => setSellerName(e.target.value)}
-                      onBlur={() => save({ seller_name: sellerName })}
-                      placeholder="Nom du vendeur"
-                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
-                    <input type="text" value={sellerContact}
-                      onChange={(e) => setSellerContact(e.target.value)}
-                      onBlur={() => save({ seller_contact: sellerContact })}
-                      placeholder="Contact (tél, email...)"
-                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted font-medium">Acheteur</label>
-                    <input type="text" value={buyerName}
-                      onChange={(e) => setBuyerName(e.target.value)}
-                      onBlur={() => save({ buyer_name: buyerName })}
-                      placeholder="Nom de l'acheteur"
-                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
-                    <input type="text" value={buyerContact}
-                      onChange={(e) => setBuyerContact(e.target.value)}
-                      onBlur={() => save({ buyer_contact: buyerContact })}
-                      placeholder="Contact"
-                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
-                  </div>
-                </div>
-              </div>
-            </details>
 
             {/* ── Frais détaillés ── */}
             <details className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
