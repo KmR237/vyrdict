@@ -403,20 +403,34 @@ function DashboardPage() {
               <span className="text-white font-bold text-xs">V</span>
             </div>
             <span className="font-bold text-foreground">Dashboard</span>
+            <span className="text-xs text-muted tabular-nums hidden sm:inline">{vehicles.filter(v => v.statut !== "passe").length} véhicules</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Liens visibles desktop */}
+            <Link href="/dashboard/livre-police" className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted hover:text-foreground hover:bg-slate-50 rounded-lg transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Livre
+            </Link>
+            <Link href="/dashboard/parametres" className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted hover:text-foreground hover:bg-slate-50 rounded-lg transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </Link>
             <Link href="/dashboard/scan" className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-[transform,box-shadow]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               <span className="hidden sm:inline">Scanner</span>
             </Link>
             <div className="relative">
-              <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-muted hover:text-foreground transition-colors cursor-pointer">
+              <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-muted hover:text-foreground transition-colors cursor-pointer relative">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" /></svg>
+                {/* Point rouge alerte */}
+                {(stats.encherePassees > 0 || stats.alerteStock > 0) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
               </button>
               {showMenu && (
-                <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50 w-40">
-                  <Link href="/dashboard/livre-police" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Livre de police</Link>
-                  <Link href="/dashboard/parametres" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Paramètres</Link>
+                <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50 w-44">
+                  {/* Liens visibles uniquement sur mobile */}
+                  <Link href="/dashboard/livre-police" className="sm:hidden block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Livre de police</Link>
+                  <Link href="/dashboard/parametres" className="sm:hidden block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Paramètres</Link>
                   <Link href="/" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Site public</Link>
                   <button onClick={logout} className="w-full text-left text-xs px-3 py-2 text-danger hover:bg-red-50 rounded-lg cursor-pointer">Déconnexion</button>
                 </div>
