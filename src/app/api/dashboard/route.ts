@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       cout_stockage_jour, source_achat, notes,
       date_enchere, tva_sur_marge, marge_minimum, lien_annonce,
       frais_enchere_pct, frais_enchere_fixes, mode_enchere, usage_perso,
+      vin, seller_name, buyer_name, tva_regime, date_vente,
       analyses (
         marque, modele, immatriculation, annee, kilometrage,
         score_sante, cout_total_min, cout_total_max, verdict,

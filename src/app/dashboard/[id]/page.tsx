@@ -101,6 +101,16 @@ export default function VehicleDetailPage() {
   const [sourceCote, setSourceCote] = useState("");
   const [dateCote, setDateCote] = useState("");
   const [usagePerso, setUsagePerso] = useState(false);
+  const [vin, setVin] = useState("");
+  const [sellerName, setSellerName] = useState("");
+  const [sellerContact, setSellerContact] = useState("");
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerContact, setBuyerContact] = useState("");
+  const [tvaRegime, setTvaRegime] = useState("sans_tva");
+  const [expenses, setExpenses] = useState<{ id: string; date: string; category: string; amount: number; description: string }[]>([]);
+  const [newExpenseCategory, setNewExpenseCategory] = useState("autre");
+  const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpenseDesc, setNewExpenseDesc] = useState("");
   const [reparationsFaites, setReparationsFaites] = useState<string[]>([]);
   const [timeline, setTimeline] = useState<{ date: string; event: string }[]>([]);
   const [notesDefaillances, setNotesDefaillances] = useState<Record<string, string>>({});
@@ -172,7 +182,16 @@ export default function VehicleDetailPage() {
         setSourceCote(data.source_cote || "");
         setDateCote(data.date_cote || "");
         setUsagePerso(data.usage_perso ?? false);
+        setVin(data.vin || "");
+        setSellerName(data.seller_name || "");
+        setSellerContact(data.seller_contact || "");
+        setBuyerName(data.buyer_name || "");
+        setBuyerContact(data.buyer_contact || "");
+        setTvaRegime(data.tva_regime || (data.tva_sur_marge ? "tva_sur_marge" : "sans_tva"));
         setReparationsFaites(data.reparations_faites || []);
+        // Fetch expenses
+        const expRes = await fetch(`/api/dashboard/${id}/expenses`);
+        if (expRes.ok) setExpenses(await expRes.json());
         setTimeline(data.timeline || []);
         setNotesDefaillances(data.notes_defaillances || {});
         setDateVente(data.date_vente || "");
@@ -224,7 +243,12 @@ export default function VehicleDetailPage() {
   const frais = fraisAnnexes ? parseFloat(fraisAnnexes) : 350;
   const joursStock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const coutStock = joursStock * (parseFloat(coutStockageJour) || 0);
-  const tvaMarge = tvaSurMarge && revente > 0 && achat > 0 && revente > achat ? Math.round((revente - achat) * 0.2) : 0;
+  const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const tvaMarge = tvaRegime === "tva_sur_marge" && revente > 0 && achat > 0 && revente > achat
+    ? Math.round(Math.max(0, revente - achat) * 0.2 / 1.2)
+    : tvaRegime === "tva_normale" && revente > 0
+    ? Math.round(revente * 0.2 / 1.2)
+    : 0;
   const margeBrute = revente > 0 && achat > 0 ? revente - achat - coutReparations - frais - coutStock : null;
   const margeNette = margeBrute !== null ? margeBrute - tvaMarge : null;
   const rendement = margeNette !== null && achat > 0 ? Math.round((margeNette / achat) * 100) : null;
@@ -1014,11 +1038,16 @@ export default function VehicleDetailPage() {
 
                 {/* TVA — masquée pour perso */}
                 {!usagePerso && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={tvaSurMarge} onChange={(e) => { const val = e.target.checked; setTvaSurMarge(val); save({ tva_sur_marge: val }, val ? "TVA activée" : "TVA désactivée"); }}
-                      className="w-4 h-4 accent-primary rounded" />
-                    <span className="text-xs text-muted">TVA sur marge (20%)</span>
-                  </label>
+                  <div>
+                    <label className="text-xs text-muted">Régime TVA</label>
+                    <select value={tvaRegime} onChange={(e) => { setTvaRegime(e.target.value); save({ tva_regime: e.target.value }); }}
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white cursor-pointer">
+                      <option value="sans_tva">Sans TVA</option>
+                      <option value="tva_sur_marge">TVA sur marge</option>
+                      <option value="tva_normale">TVA normale (20%)</option>
+                    </select>
+                    {tvaRegime === "tva_sur_marge" && <p className="text-[10px] text-muted mt-0.5">Art. 297 A CGI — Biens d&apos;occasion</p>}
+                  </div>
                 )}
 
                 {/* Marge minimum — pré-achat revente uniquement */}
@@ -1179,6 +1208,112 @@ export default function VehicleDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* ── Identité véhicule + parties ── */}
+            <details className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+              <summary className="p-4 text-sm font-bold cursor-pointer flex items-center justify-between">
+                Identité et parties
+                <svg className="w-4 h-4 text-slate-300 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div className="px-4 pb-4 flex flex-col gap-3">
+                <div>
+                  <label className="text-xs text-muted">VIN (N° de série)</label>
+                  <input type="text" value={vin} maxLength={17}
+                    onChange={(e) => setVin(e.target.value.toUpperCase())}
+                    onBlur={() => save({ vin })}
+                    placeholder="WVWZZZ3CZWE123456"
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono tracking-wider focus:border-primary focus:outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                  <div>
+                    <label className="text-xs text-muted font-medium">Vendeur</label>
+                    <input type="text" value={sellerName}
+                      onChange={(e) => setSellerName(e.target.value)}
+                      onBlur={() => save({ seller_name: sellerName })}
+                      placeholder="Nom du vendeur"
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
+                    <input type="text" value={sellerContact}
+                      onChange={(e) => setSellerContact(e.target.value)}
+                      onBlur={() => save({ seller_contact: sellerContact })}
+                      placeholder="Contact (tél, email...)"
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted font-medium">Acheteur</label>
+                    <input type="text" value={buyerName}
+                      onChange={(e) => setBuyerName(e.target.value)}
+                      onBlur={() => save({ buyer_name: buyerName })}
+                      placeholder="Nom de l'acheteur"
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none" />
+                    <input type="text" value={buyerContact}
+                      onChange={(e) => setBuyerContact(e.target.value)}
+                      onBlur={() => save({ buyer_contact: buyerContact })}
+                      placeholder="Contact"
+                      className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-muted focus:border-primary focus:outline-none" />
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            {/* ── Frais détaillés ── */}
+            <details className="bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+              <summary className="p-4 text-sm font-bold cursor-pointer flex items-center justify-between">
+                Frais détaillés {expenses.length > 0 && <span className="text-xs text-muted font-normal">({expenses.length}) — {totalExpenses.toLocaleString("fr-FR")} €</span>}
+              </summary>
+              <div className="px-4 pb-4">
+                {expenses.length > 0 && (
+                  <div className="flex flex-col gap-1 mb-3">
+                    {expenses.map(e => (
+                      <div key={e.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-slate-100 last:border-0">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 rounded font-bold uppercase shrink-0">{e.category.replace("_", " ").slice(0, 6)}</span>
+                        <span className="flex-1 truncate">{e.description || "—"}</span>
+                        <span className="font-bold tabular-nums shrink-0">{e.amount.toLocaleString("fr-FR")} €</span>
+                        <span className="text-[10px] text-muted shrink-0">{new Date(e.date).toLocaleDateString("fr-FR")}</span>
+                        <button onClick={async () => {
+                          await fetch(`/api/dashboard/${id}/expenses`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expense_id: e.id }) });
+                          setExpenses(prev => prev.filter(x => x.id !== e.id));
+                        }} className="text-muted hover:text-danger cursor-pointer shrink-0">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <select value={newExpenseCategory} onChange={(e) => setNewExpenseCategory(e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white cursor-pointer">
+                    <option value="transport">Transport</option>
+                    <option value="remise_en_etat">Remise en état</option>
+                    <option value="controle_technique">CT</option>
+                    <option value="carte_grise">Carte grise</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                  <input type="number" inputMode="numeric" value={newExpenseAmount}
+                    onChange={(e) => setNewExpenseAmount(e.target.value)}
+                    placeholder="Montant"
+                    className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-xs tabular-nums" />
+                  <input type="text" value={newExpenseDesc}
+                    onChange={(e) => setNewExpenseDesc(e.target.value)}
+                    placeholder="Description..."
+                    className="flex-1 px-2 py-1.5 rounded-lg border border-slate-200 text-xs" />
+                  <button onClick={async () => {
+                    if (!newExpenseAmount) return;
+                    const res = await fetch(`/api/dashboard/${id}/expenses`, {
+                      method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ category: newExpenseCategory, amount: parseFloat(newExpenseAmount), description: newExpenseDesc }),
+                    });
+                    if (res.ok) {
+                      const expRes = await fetch(`/api/dashboard/${id}/expenses`);
+                      if (expRes.ok) setExpenses(await expRes.json());
+                      setNewExpenseAmount(""); setNewExpenseDesc("");
+                      toast.show("Frais ajouté");
+                    }
+                  }} className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 cursor-pointer shrink-0">
+                    +
+                  </button>
+                </div>
+              </div>
+            </details>
 
           </div>
         </div>

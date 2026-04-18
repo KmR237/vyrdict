@@ -4,6 +4,9 @@ import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "rea
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { calcMaxAdjudication } from "@/lib/auction-fees";
+import dynamic from "next/dynamic";
+
+const RechartsCharts = dynamic(() => import("@/components/DashboardCharts"), { ssr: false });
 
 interface VehicleRow {
   id: string;
@@ -327,6 +330,33 @@ function DashboardPage() {
     return counts;
   }, [vehicles]);
 
+  // Données graphiques
+  const chartData = useMemo(() => {
+    const vendus = vehicles.filter(v => v.statut === "vendu" && !v.usage_perso && v.prix_achat && v.prix_revente);
+    const months: Record<string, { ca: number; marge: number }> = {};
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+      months[key] = { ca: 0, marge: 0 };
+    }
+    for (const v of vendus) {
+      const d = new Date(v.created_at);
+      const key = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+      if (months[key]) {
+        months[key].ca += v.prix_revente || 0;
+        months[key].marge += getMargeNette(v) || 0;
+      }
+    }
+    const monthlyData = Object.entries(months).map(([month, data]) => ({ month, ...data }));
+    const brands: Record<string, number> = {};
+    for (const v of vehicles.filter(v => v.statut !== "passe" && v.analyses)) {
+      brands[v.analyses!.marque] = (brands[v.analyses!.marque] || 0) + 1;
+    }
+    const brandData = Object.entries(brands).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    return { monthlyData, brandData };
+  }, [vehicles]);
+
   // Séparateurs pour tri par enchère
   const enchereGroups = useMemo(() => {
     if (sortBy !== "enchere") return null;
@@ -385,6 +415,8 @@ function DashboardPage() {
               </button>
               {showMenu && (
                 <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50 w-40">
+                  <Link href="/dashboard/livre-police" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Livre de police</Link>
+                  <Link href="/dashboard/parametres" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Paramètres</Link>
                   <Link href="/" className="block text-xs px-3 py-2 text-muted hover:bg-slate-50 rounded-lg" onClick={() => setShowMenu(false)}>Site public</Link>
                   <button onClick={logout} className="w-full text-left text-xs px-3 py-2 text-danger hover:bg-red-50 rounded-lg cursor-pointer">Déconnexion</button>
                 </div>
@@ -442,6 +474,9 @@ function DashboardPage() {
             ))}
           </div>
         )}
+
+        {/* ═══ GRAPHIQUES ═══ */}
+        {stats.total >= 5 && <RechartsCharts data={chartData} />}
 
         {/* ═══ MINI PIPELINE ═══ */}
         {Object.keys(pipeline).length > 2 && (
