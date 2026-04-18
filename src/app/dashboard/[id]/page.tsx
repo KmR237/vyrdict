@@ -165,7 +165,7 @@ export default function VehicleDetailPage() {
         setSelectedCodes(data.reparations_selectionnees || []);
         setSourceAchat(data.source_achat || "");
         setDateAchat(data.date_achat || "");
-        setCoutStockageJour(data.cout_stockage_jour?.toString() || "12");
+        setCoutStockageJour(data.cout_stockage_jour?.toString() || "0");
         setCustomPrices(data.custom_prices || {});
         setLienAnnonce(data.lien_annonce || "");
         if (data.date_enchere) {
@@ -1296,7 +1296,7 @@ export default function VehicleDetailPage() {
                       <label className="text-xs text-muted">Coût stockage / jour</label>
                       <div className="flex items-center gap-1 mt-1">
                         <input type="number" inputMode="numeric" value={coutStockageJour}
-                          onChange={(e) => { setCoutStockageJour(e.target.value); saveDebounced({ cout_stockage_jour: parseFloat(e.target.value) || 12 }); }}
+                          onChange={(e) => { setCoutStockageJour(e.target.value); saveDebounced({ cout_stockage_jour: parseFloat(e.target.value) || 0 }); }}
                           onBlur={() => save({ cout_stockage_jour: parseFloat(coutStockageJour) || 12 })}
                           className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
                         <span className="text-sm text-muted">€/j</span>
