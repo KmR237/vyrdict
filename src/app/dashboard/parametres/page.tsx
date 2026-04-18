@@ -225,6 +225,99 @@ export default function ParametresPage() {
           </div>
         </section>
 
+        {/* Aperçu facture live */}
+        <section className="bg-white rounded-lg border p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Aperçu facture</h2>
+          <div className="border border-slate-200 rounded-lg p-6 bg-slate-50 text-xs" style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
+            {/* Header facture */}
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <p className="text-sm font-bold" style={{ color: "#0d9488" }}>{company.nom || "Votre société"}</p>
+                {company.adresse && <p className="text-slate-500 mt-0.5">{company.adresse}</p>}
+                {company.siret && <p className="text-slate-500">SIRET : {company.siret}</p>}
+                {company.tva_intracom && <p className="text-slate-500">TVA : {company.tva_intracom}</p>}
+                {company.telephone && <p className="text-slate-500">Tél : {company.telephone}</p>}
+                {company.email && <p className="text-slate-500">{company.email}</p>}
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold">FACTURE</p>
+                <p className="text-slate-500">N° FAC-{new Date().getFullYear()}-001</p>
+                <p className="text-slate-500">Date : {new Date().toLocaleDateString("fr-FR")}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 my-4" />
+
+            {/* Parties */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-white rounded p-3 border border-slate-100">
+                <p className="text-[9px] font-bold uppercase text-slate-400 tracking-wide mb-1">Vendeur</p>
+                <p className="font-bold text-[11px]">{company.nom || "—"}</p>
+                {company.adresse && <p className="text-slate-500">{company.adresse}</p>}
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-100">
+                <p className="text-[9px] font-bold uppercase text-slate-400 tracking-wide mb-1">Acheteur</p>
+                <p className="font-bold text-[11px]">Jean Dupont</p>
+                <p className="text-slate-500">06 12 34 56 78</p>
+              </div>
+            </div>
+
+            {/* Véhicule */}
+            <div className="bg-teal-50 rounded p-3 mb-4 border border-teal-100">
+              <p className="text-[9px] font-bold uppercase tracking-wide mb-2" style={{ color: "#0d9488" }}>Véhicule</p>
+              <div className="grid grid-cols-2 gap-1">
+                <p><span className="text-slate-400">Désignation</span></p>
+                <p className="font-bold">Peugeot 308 2018</p>
+                <p><span className="text-slate-400">VIN</span></p>
+                <p className="font-bold font-mono">VF3LBHNJXJS123456</p>
+                <p><span className="text-slate-400">Immatriculation</span></p>
+                <p className="font-bold">AB-123-CD</p>
+                <p><span className="text-slate-400">Kilométrage</span></p>
+                <p className="font-bold">87 000 km</p>
+              </div>
+            </div>
+
+            {/* Tableau */}
+            <div className="mb-4">
+              <div className="grid grid-cols-3 bg-slate-100 rounded p-2 text-[9px] font-bold uppercase text-slate-500 tracking-wide">
+                <span>Désignation</span>
+                <span className="text-center">Qté</span>
+                <span className="text-right">Prix</span>
+              </div>
+              <div className="grid grid-cols-3 p-2 border-b border-slate-100">
+                <span>Peugeot 308 2018 — AB-123-CD</span>
+                <span className="text-center">1</span>
+                <span className="text-right font-bold">8 500,00 €</span>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="flex justify-end">
+              <div className="w-48">
+                <div className="flex justify-between py-1 border-t-2" style={{ borderColor: "#0d9488" }}>
+                  <span className="font-bold text-[11px]">Total TTC</span>
+                  <span className="font-bold text-sm" style={{ color: "#0d9488" }}>8 500,00 €</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mention TVA */}
+            <p className="text-[9px] text-slate-500 mt-4 font-medium">
+              {settings.default_tva_regime === "tva_sur_marge"
+                ? "Régime particulier — Biens d'occasion (article 297 A du CGI). TVA non applicable séparément."
+                : settings.default_tva_regime === "tva_normale"
+                ? ""
+                : "TVA non applicable — article 293 B du CGI."}
+            </p>
+
+            {/* Footer */}
+            <div className="border-t border-slate-200 mt-4 pt-2 text-center text-[8px] text-slate-400">
+              {company.nom}{company.siret ? ` — SIRET ${company.siret}` : ""}{company.tva_intracom ? ` — TVA ${company.tva_intracom}` : ""}
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400">Aperçu avec des données fictives. Le PDF réel utilise les données du véhicule.</p>
+        </section>
+
         {/* Compteur factures */}
         <section className="bg-white rounded-lg border p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Facturation</h2>
