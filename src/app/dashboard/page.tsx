@@ -307,18 +307,62 @@ function DashboardPage() {
     };
   }, [vehicles, filter]);
 
-  // 7. Best deal = meilleur plafond (pas marge)
-  const bestDeal = useMemo(() => {
-    const c = vehicles.filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses && !v.usage_perso);
-    if (c.length === 0) return null;
-    return c.reduce((best, v) => {
-      const pv = getPlafond(v) || 0;
-      const pb = getPlafond(best) || 0;
-      return pv > pb ? v : best;
-    });
+  // Top 3 deals (par plafond)
+  const topDeals = useMemo(() => {
+    return vehicles
+      .filter((v) => ["a_etudier", "a_negocier", "offre_faite"].includes(v.statut) && v.analyses && !v.usage_perso)
+      .map(v => ({ vehicle: v, plafond: getPlafond(v) || 0 }))
+      .filter(d => d.plafond > 0)
+      .sort((a, b) => b.plafond - a.plafond)
+      .slice(0, 3);
   }, [vehicles]);
 
-  const bestDealPlafond = bestDeal ? getPlafond(bestDeal) : null;
+  // Mini pipeline
+  const pipeline = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const v of vehicles) {
+      if (v.statut === "passe") continue;
+      counts[v.statut] = (counts[v.statut] || 0) + 1;
+    }
+    return counts;
+  }, [vehicles]);
+
+  // Séparateurs pour tri par enchère
+  const enchereGroups = useMemo(() => {
+    if (sortBy !== "enchere") return null;
+    const groups: Record<string, number> = {};
+    for (const v of displayVehicles) {
+      const b = getEnchereBadge(v.date_enchere);
+      if (!b) { groups["Sans date"] = (groups["Sans date"] || 0) + 1; continue; }
+      if (b.passed) { groups["Passées"] = (groups["Passées"] || 0) + 1; continue; }
+      const now = new Date();
+      const d = new Date(v.date_enchere!);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dateStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) groups["Aujourd'hui"] = (groups["Aujourd'hui"] || 0) + 1;
+      else if (diffDays === 1) groups["Demain"] = (groups["Demain"] || 0) + 1;
+      else if (diffDays <= 7) groups["Cette semaine"] = (groups["Cette semaine"] || 0) + 1;
+      else groups["Plus tard"] = (groups["Plus tard"] || 0) + 1;
+    }
+    return groups;
+  }, [sortBy, displayVehicles]);
+
+  // Pour rendre les séparateurs : tracker le groupe du véhicule précédent
+  function getEnchereGroup(v: VehicleRow): string {
+    const b = getEnchereBadge(v.date_enchere);
+    if (!b) return "Sans date";
+    if (b.passed) return "Passées";
+    const now = new Date();
+    const d = new Date(v.date_enchere!);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Demain";
+    if (diffDays <= 7) return "Cette semaine";
+    return "Plus tard";
+  }
 
   return (
     <div className="min-h-full flex flex-col bg-slate-50">
@@ -399,21 +443,48 @@ function DashboardPage() {
           </div>
         )}
 
-        {/* ═══ MEILLEUR DEAL (basé sur plafond) ═══ */}
-        {bestDeal && bestDeal.analyses && bestDealPlafond && bestDealPlafond > 0 && (
-          <Link href={`/dashboard/${bestDeal.id}`} className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 rounded-2xl p-4 mb-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <span className="text-lg">&#11088;</span>
-              <div>
-                <p className="text-xs text-muted font-medium">Meilleur deal</p>
-                <p className="font-bold text-foreground">{bestDeal.analyses.marque} {bestDeal.analyses.modele} <span className="text-muted font-normal text-sm">{bestDeal.analyses.annee}</span></p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-black text-teal-700 tabular-nums">{bestDealPlafond.toLocaleString("fr-FR")} €</p>
-              <p className="text-[10px] text-muted">plafond enchère</p>
-            </div>
-          </Link>
+        {/* ═══ MINI PIPELINE ═══ */}
+        {Object.keys(pipeline).length > 2 && (
+          <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+            {["a_etudier", "a_negocier", "offre_faite", "achete", "en_reparation", "en_vente", "vendu"].map((key, i) => {
+              const count = pipeline[key];
+              if (!count) return null;
+              const s = STATUTS[key];
+              return (
+                <div key={key} className="flex items-center gap-1 shrink-0">
+                  {i > 0 && Object.entries(pipeline).filter(([k]) => ["a_etudier", "a_negocier", "offre_faite", "achete", "en_reparation", "en_vente", "vendu"].indexOf(k) < ["a_etudier", "a_negocier", "offre_faite", "achete", "en_reparation", "en_vente", "vendu"].indexOf(key) && pipeline[k]).length > 0 && (
+                    <svg className="w-3 h-3 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  )}
+                  <button onClick={() => setFilter(key)}
+                    className={`text-[10px] px-2 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${filter === key ? s.color + " ring-1 ring-current" : "bg-white text-muted border border-slate-200/60 hover:bg-slate-50"}`}>
+                    {count} <span className="hidden sm:inline">{s.label}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ TOP DEALS ═══ */}
+        {topDeals.length > 0 && (
+          <div className="flex flex-col gap-2 mb-6">
+            {topDeals.map(({ vehicle: d, plafond }, i) => (
+              <Link key={d.id} href={`/dashboard/${d.id}`}
+                className={`flex items-center justify-between rounded-2xl p-3 hover:shadow-md transition-shadow border ${i === 0 ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200/50" : "bg-white border-slate-200/60"}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-black tabular-nums ${i === 0 ? "text-teal-700" : "text-muted"}`}>#{i + 1}</span>
+                  <div>
+                    <p className={`font-semibold text-sm ${i === 0 ? "text-foreground" : "text-slate-600"}`}>{d.analyses!.marque} {d.analyses!.modele} <span className="text-muted font-normal text-xs">{d.analyses!.annee}</span></p>
+                    {d.source_achat && <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{SOURCE_LABELS[d.source_achat] || d.source_achat}</span>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-black tabular-nums ${i === 0 ? "text-teal-700" : "text-slate-700"}`}>{plafond.toLocaleString("fr-FR")} €</p>
+                  <p className="text-[10px] text-muted">plafond</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
 
         {/* ═══ TOOLBAR ═══ */}
@@ -460,10 +531,14 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {displayVehicles.map((v) => {
+            {displayVehicles.map((v, vIdx) => {
               const a = v.analyses;
               if (!a) return null;
               const isPerso = v.usage_perso === true;
+              // Séparateur enchère
+              const enchereGroupLabel = sortBy === "enchere" ? getEnchereGroup(v) : null;
+              const prevGroup = vIdx > 0 && sortBy === "enchere" && displayVehicles[vIdx - 1].analyses ? getEnchereGroup(displayVehicles[vIdx - 1]) : null;
+              const showSeparator = enchereGroupLabel && enchereGroupLabel !== prevGroup;
               const margeNette = isPerso ? null : getMargeNette(v);
               const plafond = getPlafond(v);
               const coutTotal = getCoutTotal(v);
@@ -481,7 +556,16 @@ function DashboardPage() {
               const missingData = isPreAchat && !plafond && !v.prix_revente ? "Prix revente ?" : null;
 
               return (
-                <div key={v.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden border-l-4 ${statut.border} ${v.statut === "passe" ? "opacity-40" : ""}`}>
+                <div key={v.id}>
+                {showSeparator && (
+                  <div className="flex items-center gap-3 pt-3 pb-1">
+                    <span className={`text-xs font-bold ${enchereGroupLabel === "Aujourd'hui" ? "text-red-600" : enchereGroupLabel === "Demain" ? "text-amber-600" : enchereGroupLabel === "Passées" ? "text-red-800" : "text-muted"}`}>
+                      {enchereGroupLabel}
+                    </span>
+                    <div className="flex-1 h-px bg-slate-200" />
+                  </div>
+                )}
+                <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden border-l-4 ${statut.border} ${v.statut === "passe" ? "opacity-40" : ""}`}>
                   {/* Ligne principale */}
                   <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer hover:bg-slate-50/50 transition-colors"
                     onClick={() => setExpandedId(isExpanded ? null : v.id)}>
@@ -518,6 +602,12 @@ function DashboardPage() {
                             {days !== null && (
                               <span className={`text-[11px] font-medium ${days > 60 ? "text-danger" : days > 45 ? "text-amber-600" : "text-muted"}`}>
                                 {days}j stock
+                              </span>
+                            )}
+                            {/* Coût stockage visible si > 30j */}
+                            {days !== null && days > 30 && v.cout_stockage_jour > 0 && (
+                              <span className="text-[11px] text-amber-600 font-medium">
+                                -{(days * v.cout_stockage_jour).toLocaleString("fr-FR")} € stock
                               </span>
                             )}
                             <span className={`text-[11px] ${hasDevisReel ? "text-teal-600" : "text-amber-500"}`}>
@@ -656,6 +746,7 @@ function DashboardPage() {
                       </div>
                     </div>
                   )}
+                </div>
                 </div>
               );
             })}
