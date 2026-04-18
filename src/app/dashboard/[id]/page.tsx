@@ -614,6 +614,17 @@ export default function VehicleDetailPage() {
                     }} />
                   </label>
                 )}
+                {/* Bordereau / facture d'achat — lien direct */}
+                {vehicle.documents && vehicle.documents.length > 0 && (() => {
+                  const facture = vehicle.documents.find((d: { type: string; url: string; name: string }) => d.type === "facture");
+                  return facture ? (
+                    <a href={facture.url} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline font-medium mt-1 inline-flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                      Bordereau d&apos;achat
+                    </a>
+                  ) : null;
+                })()}
               </div>
             </div>
 
