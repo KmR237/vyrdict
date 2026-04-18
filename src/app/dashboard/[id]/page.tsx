@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -115,6 +115,29 @@ export default function VehicleDetailPage() {
   const [quickAchatOpen, setQuickAchatOpen] = useState(false);
   const [quickAchatPrix, setQuickAchatPrix] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const save = useCallback(async (updates: Record<string, unknown>, label?: string) => {
+    setSaveStatus("saving");
+    await fetch(`/api/dashboard/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    setSaveStatus("saved");
+    if (label) toast.show(label);
+    setTimeout(() => setSaveStatus("idle"), 2000);
+  }, [id, toast]);
+
+  // Save with debounce — auto-save while typing (800ms delay)
+  const saveDebounced = useCallback((updates: Record<string, unknown>) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => save(updates), 800);
+  }, [save]);
+
+  useEffect(() => {
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -159,18 +182,6 @@ export default function VehicleDetailPage() {
       setLoading(false);
     })();
   }, [id]);
-
-  const save = useCallback(async (updates: Record<string, unknown>, label?: string) => {
-    setSaveStatus("saving");
-    await fetch(`/api/dashboard/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    });
-    setSaveStatus("saved");
-    if (label) toast.show(label);
-    setTimeout(() => setSaveStatus("idle"), 2000);
-  }, [id, toast]);
 
   const resultat = vehicle?.analyses?.resultat;
 
@@ -918,7 +929,7 @@ export default function VehicleDetailPage() {
                     <label className="text-xs text-muted">Devis garage total</label>
                     <div className="flex items-center gap-1 mt-1">
                       <input type="number" inputMode="numeric" value={devisGarage}
-                        onChange={(e) => setDevisGarage(e.target.value)}
+                        onChange={(e) => { setDevisGarage(e.target.value); saveDebounced({ devis_garage: e.target.value ? parseFloat(e.target.value) : null, devis_reel: e.target.value ? parseFloat(e.target.value) : null }); }}
                         onBlur={() => save({ devis_garage: devisGarage ? parseFloat(devisGarage) : null, devis_reel: devisGarage ? parseFloat(devisGarage) : null })}
                         placeholder={`~${estimationSelectionnees}`}
                         className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
@@ -937,7 +948,7 @@ export default function VehicleDetailPage() {
                   <label className="text-xs text-muted">{isPreAchat ? "Budget achat max" : "Prix d'achat"}</label>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixAchat}
-                      onChange={(e) => setPrixAchat(e.target.value)}
+                      onChange={(e) => { setPrixAchat(e.target.value); saveDebounced({ prix_achat: e.target.value ? parseFloat(e.target.value) : null }); }}
                       onBlur={() => save({ prix_achat: prixAchat ? parseFloat(prixAchat) : null })}
                       placeholder="6 500"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
@@ -952,7 +963,7 @@ export default function VehicleDetailPage() {
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={prixRevente}
-                      onChange={(e) => setPrixRevente(e.target.value)}
+                      onChange={(e) => { setPrixRevente(e.target.value); saveDebounced({ prix_revente: e.target.value ? parseFloat(e.target.value) : null }); }}
                       onBlur={() => save({ prix_revente: prixRevente ? parseFloat(prixRevente) : null })}
                       placeholder="9 000"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
@@ -967,7 +978,7 @@ export default function VehicleDetailPage() {
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={coteMarche}
-                      onChange={(e) => setCoteMarche(e.target.value)}
+                      onChange={(e) => { setCoteMarche(e.target.value); saveDebounced({ cote_marche: e.target.value ? parseFloat(e.target.value) : null }); }}
                       onBlur={() => {
                         save({ cote_marche: coteMarche ? parseFloat(coteMarche) : null, date_cote: coteMarche && !dateCote ? new Date().toISOString().slice(0, 10) : dateCote || null });
                         if (coteMarche && !dateCote) setDateCote(new Date().toISOString().slice(0, 10));
@@ -994,7 +1005,7 @@ export default function VehicleDetailPage() {
                   <label className="text-xs text-muted">Frais annexes (CT, carte grise, transport)</label>
                   <div className="flex items-center gap-1 mt-1">
                     <input type="number" inputMode="numeric" value={fraisAnnexes}
-                      onChange={(e) => setFraisAnnexes(e.target.value)}
+                      onChange={(e) => { setFraisAnnexes(e.target.value); saveDebounced({ frais_annexes: e.target.value ? parseFloat(e.target.value) : 350 }); }}
                       onBlur={() => save({ frais_annexes: fraisAnnexes ? parseFloat(fraisAnnexes) : 350 })}
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
                     <span className="text-sm text-muted">€</span>
@@ -1016,7 +1027,7 @@ export default function VehicleDetailPage() {
                     <label className="text-xs text-muted">Marge minimum souhaitée</label>
                     <div className="flex items-center gap-1 mt-1">
                       <input type="number" inputMode="numeric" value={margeMinimum}
-                        onChange={(e) => setMargeMinimum(e.target.value)}
+                        onChange={(e) => { setMargeMinimum(e.target.value); saveDebounced({ marge_minimum: parseFloat(e.target.value) || 0 }); }}
                         onBlur={() => save({ marge_minimum: parseFloat(margeMinimum) || 0 })}
                         placeholder="500"
                         className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
@@ -1120,7 +1131,7 @@ export default function VehicleDetailPage() {
                       <label className="text-xs text-muted">Coût stockage / jour</label>
                       <div className="flex items-center gap-1 mt-1">
                         <input type="number" inputMode="numeric" value={coutStockageJour}
-                          onChange={(e) => setCoutStockageJour(e.target.value)}
+                          onChange={(e) => { setCoutStockageJour(e.target.value); saveDebounced({ cout_stockage_jour: parseFloat(e.target.value) || 12 }); }}
                           onBlur={() => save({ cout_stockage_jour: parseFloat(coutStockageJour) || 12 })}
                           className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums" />
                         <span className="text-sm text-muted">€/j</span>
@@ -1136,7 +1147,7 @@ export default function VehicleDetailPage() {
                       <label className="text-xs text-muted font-medium">Prix de vente réel</label>
                       <div className="flex items-center gap-1 mt-1">
                         <input type="number" inputMode="numeric" value={prixVenteReel}
-                          onChange={(e) => setPrixVenteReel(e.target.value)}
+                          onChange={(e) => { setPrixVenteReel(e.target.value); saveDebounced({ prix_vente_reel: e.target.value ? parseFloat(e.target.value) : null }); }}
                           onBlur={() => save({ prix_vente_reel: prixVenteReel ? parseFloat(prixVenteReel) : null })}
                           placeholder={prixRevente || "9 000"}
                           className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
