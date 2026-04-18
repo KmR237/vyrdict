@@ -74,6 +74,35 @@ export default function MentionsLegales() {
               Le nom &quot;Vyrdict&quot;, le logo et le design du site sont la propriété de l&apos;éditeur. Toute reproduction sans autorisation est interdite.
             </p>
           </section>
+
+          <section>
+            <h2 className="font-bold text-lg text-foreground mb-2">Transfert de données</h2>
+            <p>
+              Les documents déposés (photos/PDF de contrôle technique) sont transmis à l&apos;API Anthropic (Claude) pour analyse. Aucun document n&apos;est stocké après traitement. Anthropic ne conserve pas les données transmises via l&apos;API. Voir la{" "}
+              <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">politique de confidentialité d&apos;Anthropic</a>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-bold text-lg text-foreground mb-2">Conditions d&apos;utilisation</h2>
+            <p>
+              L&apos;utilisation de Vyrdict est gratuite et sans inscription. Les estimations de coûts sont fournies à titre indicatif et ne constituent pas un devis professionnel. Vyrdict ne peut être tenu responsable des décisions prises sur la base de ces estimations.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-bold text-lg text-foreground mb-2">Contact</h2>
+            <p>
+              Pour toute question : <a href="mailto:contact@vyrdict.fr" className="text-primary hover:underline">contact@vyrdict.fr</a>
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-bold text-lg text-foreground mb-2">Droit applicable</h2>
+            <p>
+              Le présent site est soumis au droit français. Tout litige sera soumis aux tribunaux compétents de Dax.
+            </p>
+          </section>
         </div>
       </main>
 

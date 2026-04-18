@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   description:
     "Tout savoir sur le contrôle technique auto en France : points de contrôle, défaillances, coûts, délais de contre-visite et conseils pour passer votre CT sereinement.",
   alternates: { canonical: "https://vyrdict.fr/guide-controle-technique" },
+  openGraph: {
+    title: "Guide complet du contrôle technique automobile en France — Vyrdict",
+    description: "Tout savoir sur le contrôle technique auto en France : points de contrôle, défaillances, coûts, délais de contre-visite et conseils pour passer votre CT sereinement.",
+    url: "https://vyrdict.fr/guide-controle-technique",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function GuideControleTechnique() {

@@ -6,11 +6,30 @@ export const metadata: Metadata = {
   description:
     "Liste complète des défaillances critiques au contrôle technique, conséquences (immobilisation du véhicule), solutions et coûts de réparation. Guide pratique 2026.",
   alternates: { canonical: "https://vyrdict.fr/defaillance-critique-controle-technique" },
+  openGraph: {
+    title: "Défaillance critique au contrôle technique : liste, conséquences et solutions — Vyrdict",
+    description: "Liste complète des défaillances critiques au contrôle technique, conséquences (immobilisation du véhicule), solutions et coûts de réparation. Guide pratique 2026.",
+    url: "https://vyrdict.fr/defaillance-critique-controle-technique",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function DefaillanceCritique() {
   return (
     <div className="min-h-full flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Défaillance critique au contrôle technique : liste, conséquences et solutions — Vyrdict",
+        "description": "Liste complète des défaillances critiques au contrôle technique, conséquences (immobilisation du véhicule), solutions et coûts de réparation. Guide pratique 2026.",
+        "author": { "@type": "Organization", "name": "Vyrdict" },
+        "publisher": { "@type": "Organization", "name": "Vyrdict", "url": "https://vyrdict.fr" },
+        "datePublished": "2026-04-08",
+        "dateModified": "2026-04-18",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "https://vyrdict.fr/defaillance-critique-controle-technique" }
+      }) }} />
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">

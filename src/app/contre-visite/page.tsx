@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   description:
     "Tout savoir sur la contre-visite du contrôle technique : délai de 2 mois, coût moyen, réparations prioritaires et comment bien la préparer pour ne pas repayer le CT complet.",
   alternates: { canonical: "https://vyrdict.fr/contre-visite" },
+  openGraph: {
+    title: "Contre-visite contrôle technique : délais, coûts et conseils — Vyrdict",
+    description: "Tout savoir sur la contre-visite du contrôle technique : délai de 2 mois, coût moyen, réparations prioritaires et comment bien la préparer pour ne pas repayer le CT complet.",
+    url: "https://vyrdict.fr/contre-visite",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function ContreVisite() {

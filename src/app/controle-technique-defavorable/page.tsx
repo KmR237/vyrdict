@@ -6,11 +6,30 @@ export const metadata: Metadata = {
   description:
     "Contrôle technique défavorable : peut-on rouler, quels délais pour la contre-visite, quelles démarches entreprendre et combien ça coûte. Guide complet 2026.",
   alternates: { canonical: "https://vyrdict.fr/controle-technique-defavorable" },
+  openGraph: {
+    title: "Contrôle technique défavorable : peut-on rouler ? Que faire ? — Vyrdict",
+    description: "Contrôle technique défavorable : peut-on rouler, quels délais pour la contre-visite, quelles démarches entreprendre et combien ça coûte. Guide complet 2026.",
+    url: "https://vyrdict.fr/controle-technique-defavorable",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function ControleDefavorable() {
   return (
     <div className="min-h-full flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Contrôle technique défavorable : peut-on rouler ? Que faire ? — Vyrdict",
+        "description": "Contrôle technique défavorable : peut-on rouler, quels délais pour la contre-visite, quelles démarches entreprendre et combien ça coûte. Guide complet 2026.",
+        "author": { "@type": "Organization", "name": "Vyrdict" },
+        "publisher": { "@type": "Organization", "name": "Vyrdict", "url": "https://vyrdict.fr" },
+        "datePublished": "2026-04-08",
+        "dateModified": "2026-04-18",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "https://vyrdict.fr/controle-technique-defavorable" }
+      }) }} />
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">

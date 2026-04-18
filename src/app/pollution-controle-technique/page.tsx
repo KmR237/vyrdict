@@ -6,11 +6,30 @@ export const metadata: Metadata = {
   description:
     "Contrôle technique refusé pour pollution ? Causes fréquentes (FAP, catalyseur, sonde lambda), seuils d'émission, solutions et coûts de réparation diesel et essence.",
   alternates: { canonical: "https://vyrdict.fr/pollution-controle-technique" },
+  openGraph: {
+    title: "Contrôle technique refusé pour pollution : causes et solutions diesel/essence — Vyrdict",
+    description: "Contrôle technique refusé pour pollution ? Causes fréquentes (FAP, catalyseur, sonde lambda), seuils d'émission, solutions et coûts de réparation diesel et essence.",
+    url: "https://vyrdict.fr/pollution-controle-technique",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function PollutionCT() {
   return (
     <div className="min-h-full flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Contrôle technique refusé pour pollution : causes et solutions diesel/essence — Vyrdict",
+        "description": "Contrôle technique refusé pour pollution ? Causes fréquentes (FAP, catalyseur, sonde lambda), seuils d'émission, solutions et coûts de réparation diesel et essence.",
+        "author": { "@type": "Organization", "name": "Vyrdict" },
+        "publisher": { "@type": "Organization", "name": "Vyrdict", "url": "https://vyrdict.fr" },
+        "datePublished": "2026-04-08",
+        "dateModified": "2026-04-18",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "https://vyrdict.fr/pollution-controle-technique" }
+      }) }} />
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">

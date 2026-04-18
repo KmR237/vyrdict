@@ -6,11 +6,30 @@ export const metadata: Metadata = {
   description:
     "Tous les prix de réparation après un contrôle technique raté : freins, éclairage, suspension, échappement, direction. Tarifs garage 2026 et astuces pour économiser.",
   alternates: { canonical: "https://vyrdict.fr/prix-reparation-controle-technique" },
+  openGraph: {
+    title: "Prix des réparations après un contrôle technique raté — Guide complet 2026 — Vyrdict",
+    description: "Tous les prix de réparation après un contrôle technique raté : freins, éclairage, suspension, échappement, direction. Tarifs garage 2026 et astuces pour économiser.",
+    url: "https://vyrdict.fr/prix-reparation-controle-technique",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function PrixReparation() {
   return (
     <div className="min-h-full flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Prix des réparations après un contrôle technique raté — Guide complet 2026 — Vyrdict",
+        "description": "Tous les prix de réparation après un contrôle technique raté : freins, éclairage, suspension, échappement, direction. Tarifs garage 2026 et astuces pour économiser.",
+        "author": { "@type": "Organization", "name": "Vyrdict" },
+        "publisher": { "@type": "Organization", "name": "Vyrdict", "url": "https://vyrdict.fr" },
+        "datePublished": "2026-04-08",
+        "dateModified": "2026-04-18",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "https://vyrdict.fr/prix-reparation-controle-technique" }
+      }) }} />
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">

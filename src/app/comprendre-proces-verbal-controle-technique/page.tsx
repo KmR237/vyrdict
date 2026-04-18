@@ -6,11 +6,30 @@ export const metadata: Metadata = {
   description:
     "Guide complet pour comprendre votre procès-verbal (PV) de contrôle technique : structure du document, codes de défaillance, niveaux de gravité et signification de chaque rubrique.",
   alternates: { canonical: "https://vyrdict.fr/comprendre-proces-verbal-controle-technique" },
+  openGraph: {
+    title: "Comment lire et comprendre votre procès-verbal de contrôle technique — Vyrdict",
+    description: "Guide complet pour comprendre votre procès-verbal (PV) de contrôle technique : structure du document, codes de défaillance, niveaux de gravité et signification de chaque rubrique.",
+    url: "https://vyrdict.fr/comprendre-proces-verbal-controle-technique",
+    siteName: "Vyrdict",
+    type: "article",
+    locale: "fr_FR",
+  },
 };
 
 export default function ComprendrePV() {
   return (
     <div className="min-h-full flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Comment lire et comprendre votre procès-verbal de contrôle technique — Vyrdict",
+        "description": "Guide complet pour comprendre votre procès-verbal (PV) de contrôle technique : structure du document, codes de défaillance, niveaux de gravité et signification de chaque rubrique.",
+        "author": { "@type": "Organization", "name": "Vyrdict" },
+        "publisher": { "@type": "Organization", "name": "Vyrdict", "url": "https://vyrdict.fr" },
+        "datePublished": "2026-04-08",
+        "dateModified": "2026-04-18",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "https://vyrdict.fr/comprendre-proces-verbal-controle-technique" }
+      }) }} />
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center">
           <Link href="/" className="flex items-center gap-2.5">
