@@ -253,10 +253,10 @@ export default function VehicleDetailPage() {
   const coutReparations = devisGarage ? parseFloat(devisGarage) : estimationSelectionnees;
   const achat = prixAchat ? parseFloat(prixAchat) : 0;
   const revente = prixRevente ? parseFloat(prixRevente) : 0;
-  const frais = fraisAnnexes ? parseFloat(fraisAnnexes) : 350;
+  const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const frais = totalExpenses;
   const joursStock = dateAchat ? Math.floor((Date.now() - new Date(dateAchat).getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const coutStock = joursStock * (parseFloat(coutStockageJour) || 0);
-  const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const tvaMarge = tvaRegime === "tva_sur_marge" && revente > 0 && achat > 0 && revente > achat
     ? Math.round(Math.max(0, revente - achat) * 0.2 / 1.2)
     : tvaRegime === "tva_normale" && revente > 0
@@ -1002,7 +1002,7 @@ export default function VehicleDetailPage() {
                         <div className="flex justify-between"><span>+ Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">+{coutReparations.toLocaleString("fr-FR")} €</span></div>
                       )}
                       {frais > 0 && (
-                        <div className="flex justify-between"><span>+ Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">+{frais.toLocaleString("fr-FR")} €</span></div>
+                        <div className="flex justify-between"><span>+ Frais</span><span className="font-semibold tabular-nums text-slate-500">+{frais.toLocaleString("fr-FR")} €</span></div>
                       )}
                       <div className="flex justify-between pt-1.5 mt-1 border-t border-slate-200/60">
                         <span className="font-bold">= Coût total</span>
@@ -1035,7 +1035,7 @@ export default function VehicleDetailPage() {
                         <div className="flex justify-between"><span>− Réparations {devisGarage ? "(devis)" : "(estimation)"}</span><span className="font-semibold tabular-nums text-amber-600">−{coutReparations.toLocaleString("fr-FR")} €</span></div>
                       )}
                       {frais > 0 && (
-                        <div className="flex justify-between"><span>− Frais annexes</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
+                        <div className="flex justify-between"><span>− Frais</span><span className="font-semibold tabular-nums text-slate-500">−{frais.toLocaleString("fr-FR")} €</span></div>
                       )}
                       {coutStock > 0 && (
                         <div className="flex justify-between"><span>− Stockage ({joursStock}j)</span><span className="font-semibold tabular-nums text-amber-600">−{coutStock.toLocaleString("fr-FR")} €</span></div>
@@ -1136,16 +1136,13 @@ export default function VehicleDetailPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs text-muted">Frais annexes (CT, carte grise, transport)</label>
-                  <div className="flex items-center gap-1 mt-1">
-                    <input type="number" inputMode="numeric" value={fraisAnnexes}
-                      onChange={(e) => { setFraisAnnexes(e.target.value); saveDebounced({ frais_annexes: e.target.value ? parseFloat(e.target.value) : 350 }); }}
-                      onBlur={() => save({ frais_annexes: fraisAnnexes ? parseFloat(fraisAnnexes) : 350 })}
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:outline-none tabular-nums" />
-                    <span className="text-sm text-muted">€</span>
+                {/* Frais = total des frais détaillés (colonne gauche) */}
+                {totalExpenses > 0 && (
+                  <div className="flex items-center justify-between text-xs text-muted px-1">
+                    <span>Frais détaillés</span>
+                    <span className="font-bold tabular-nums">{totalExpenses.toLocaleString("fr-FR")} €</span>
                   </div>
-                </div>
+                )}
 
                 {/* TVA — masquée pour perso */}
                 {!usagePerso && (
