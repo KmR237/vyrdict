@@ -12,6 +12,7 @@ import { AUCTION_SOURCES, calcMaxAdjudication, calcAuctionFees } from "@/lib/auc
 
 // PDF (lazy load — la lib est lourde)
 const VehiclePDFLink = dynamic(() => import("@/components/VehiclePDF").then(m => m.VehiclePDFLink), { ssr: false });
+const InvoicePDFLink = dynamic(() => import("@/components/InvoicePDF").then(m => m.InvoicePDFLink), { ssr: false });
 
 const STATUTS = [
   { key: "a_etudier", label: "À étudier", color: "bg-slate-100 text-slate-600" },
@@ -119,6 +120,8 @@ export default function VehicleDetailPage() {
   const [prixVenteReel, setPrixVenteReel] = useState("");
   const [margeEstimeeAuMomentVente, setMargeEstimeeAuMomentVente] = useState<number | null>(null);
   const [duplicating, setDuplicating] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState<{ nom: string; adresse: string; siret: string; tva_intracom: string; telephone: string; email: string }>({ nom: "", adresse: "", siret: "", tva_intracom: "", telephone: "", email: "" });
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showAllFields, setShowAllFields] = useState(false);
   const [showFinancier, setShowFinancier] = useState(true);
@@ -210,6 +213,13 @@ export default function VehicleDetailPage() {
         setDateVente(data.date_vente || "");
         setNotesAcheteur(data.notes_acheteur || "");
         setPrixVenteReel(data.prix_vente_reel?.toString() || "");
+        setInvoiceNumber(data.invoice_number || "");
+      }
+      // Charger les infos société
+      const settingsRes = await fetch("/api/settings");
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        if (s.company_info) setCompanyInfo(s.company_info);
       }
       setLoading(false);
     })();
@@ -949,6 +959,46 @@ export default function VehicleDetailPage() {
                   <p className={`text-xs font-medium mt-1 ${ecartMarge.diff >= 0 ? "text-emerald-600" : "text-amber-600"}`}>
                     {ecartMarge.diff >= 0 ? "+" : ""}{ecartMarge.diff.toLocaleString("fr-FR")} € vs estimation ({ecartMarge.pct >= 0 ? "+" : ""}{ecartMarge.pct}%)
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* ── Facture de vente ── */}
+            {(statut === "en_vente" || isVendu) && !usagePerso && (
+              <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+                <h3 className="font-bold text-sm mb-3">Facture de vente</h3>
+                {invoiceNumber ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-muted">N° <span className="font-mono font-bold">{invoiceNumber}</span></p>
+                    <InvoicePDFLink data={{
+                      invoiceNumber,
+                      date: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
+                      company: companyInfo,
+                      vehicle: { marque: a.marque, modele: a.modele, annee: a.annee, vin, immatriculation: a.immatriculation, kilometrage: a.kilometrage },
+                      seller: { name: companyInfo.nom, contact: "" },
+                      buyer: { name: buyerName, contact: buyerContact },
+                      prixVenteTTC: prixVenteReel ? parseFloat(prixVenteReel) : revente,
+                      coutRevient: achat + coutReparations + frais,
+                      tvaRegime,
+                      tvaRate: 0.2,
+                    }}>
+                      Télécharger la facture PDF
+                    </InvoicePDFLink>
+                  </div>
+                ) : (
+                  <button onClick={async () => {
+                    const res = await fetch(`/api/dashboard/${id}/invoice`, { method: "POST" });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setInvoiceNumber(data.invoice_number);
+                      toast.show(`Facture ${data.invoice_number} créée`);
+                    }
+                  }} className="w-full px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-all cursor-pointer">
+                    Générer la facture
+                  </button>
+                )}
+                {!companyInfo.nom && (
+                  <p className="text-[10px] text-amber-600 mt-2">Renseignez vos infos société dans les <a href="/dashboard/parametres" className="underline">Paramètres</a> pour une facture complète.</p>
                 )}
               </div>
             )}
