@@ -12,14 +12,21 @@ export interface AuctionFees {
 export const AUCTION_SOURCES: Record<string, AuctionFees> = {
   "alcopa_ligne": {
     label: "Alcopa (en ligne)",
-    pct: 0.036,
-    fixes: 120,
-    note: "40€ frais + 80€ LIVE",
+    pct: 0,
+    fixes: 360,
+    note: "300€ HT honoraires (360€ TTC) — vérifié bordereau",
+  },
+  "alcopa_en_ligne": {
+    label: "Alcopa (en ligne)",
+    pct: 0,
+    fixes: 360,
+    note: "300€ HT honoraires (360€ TTC) — vérifié bordereau",
   },
   "alcopa_salle": {
     label: "Alcopa (en salle)",
     pct: 0.144,
     fixes: 140,
+    note: "Non vérifié — à confirmer avec un bordereau salle",
   },
   "bca": {
     label: "BCA",
