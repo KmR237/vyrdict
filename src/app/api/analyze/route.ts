@@ -13,7 +13,7 @@ const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp
 const MAX_SIZE = 10 * 1024 * 1024; // 10 Mo
 
 const SYSTEM_PROMPT = `Expert CT automobile français. Analyse le PV et retourne UNIQUEMENT un JSON valide :
-{"vehicule":{"marque":"","modele":"","immatriculation":"","annee":"","kilometrage":0},"code_postal":"","puissance_fiscale":"","energie":"","score_sante":0,"defaillances":[{"code":"","libelle":"","description":"","gravite":"","localisation":"","cout_min":0,"cout_max":0,"priorite":1,"reparation":"","peut_faire_soi_meme":false}],"cout_total_min":0,"cout_total_max":0,"cote_argus_estimee":null,"verdict":"","conseil_verdict":"","contre_visite_deadline":null,"conseils":[]}
+{"vehicule":{"marque":"","modele":"","immatriculation":"","annee":"","kilometrage":0,"vin":""},"code_postal":"","puissance_fiscale":"","energie":"","score_sante":0,"defaillances":[{"code":"","libelle":"","description":"","gravite":"","localisation":"","cout_min":0,"cout_max":0,"priorite":1,"reparation":"","peut_faire_soi_meme":false}],"cout_total_min":0,"cout_total_max":0,"cote_argus_estimee":null,"verdict":"","conseil_verdict":"","contre_visite_deadline":null,"conseils":[]}
 
 RÈGLES :
 - gravite : RECOPIE mot pour mot la gravité inscrite sur le PV. Si le PV dit "mineur" tu mets "mineur". Si le PV dit "majeur" tu mets "majeur". INTERDIT de changer la gravité. Si tu penses qu'un défaut mineur mérite attention, ajoute "À surveiller" dans la description, mais la gravité reste celle du PV.
@@ -26,6 +26,7 @@ RÈGLES :
 - conseils : 3 phrases courtes
 - Coûts base CITADINE, adapte : berline×1.2, SUV×1.3, premium×1.5
 - code_postal, puissance_fiscale, energie : lire sur le PV
+- vin : lire le numéro VIN/châssis sur le PV (17 caractères, champ E du PV). Si illisible, retourner ""
 
 PRIX CITADINE (label:min-max€) : ${buildPriceReference()}
 

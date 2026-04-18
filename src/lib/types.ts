@@ -6,6 +6,7 @@ export const VehiculeSchema = z.object({
   immatriculation: z.string(),
   annee: z.string(),
   kilometrage: z.number().min(0),
+  vin: z.string().optional().default(""),
 });
 
 export const DefaillanceSchema = z.object({

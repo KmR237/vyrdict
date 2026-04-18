@@ -7,6 +7,7 @@ export const DEMO_RESULT: AnalyseResult = {
     immatriculation: "FG-123-AB",
     annee: "2017",
     kilometrage: 98450,
+    vin: "VF15SFL0H54321098",
   },
   code_postal: "40100",
   puissance_fiscale: "5",

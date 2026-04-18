@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
         estimation_vyrdict: coutMoyen,
         frais_annexes: 350,
         ct_file_url: ctFileUrl,
+        vin: resultat.vehicule?.vin || "",
       })
       .select()
       .single();

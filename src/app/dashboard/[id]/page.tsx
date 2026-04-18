@@ -1081,7 +1081,17 @@ export default function VehicleDetailPage() {
               <div className="flex flex-col gap-3">
                 <div>
                   <label className="text-xs text-muted">Source</label>
-                  <select value={sourceAchat} onChange={(e) => { setSourceAchat(e.target.value); save({ source_achat: e.target.value }); }}
+                  <select value={sourceAchat} onChange={(e) => {
+                    const v = e.target.value;
+                    setSourceAchat(v);
+                    const updates: Record<string, unknown> = { source_achat: v };
+                    // Pré-remplir le vendeur si vide
+                    if (!sellerName && v) {
+                      const labels: Record<string, string> = { alcopa: "Alcopa Auction", bca: "BCA", vpauto: "VPAuto", interencheres: "Interenchères", encheres_vo: "Enchères VO", capcar: "CapCar Pro", planete_auto: "Planète Auto" };
+                      if (labels[v]) { setSellerName(labels[v]); updates.seller_name = labels[v]; }
+                    }
+                    save(updates);
+                  }}
                     className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white cursor-pointer">
                     <option value="">Non renseigné</option>
                     <option value="alcopa">Alcopa Auction</option>
