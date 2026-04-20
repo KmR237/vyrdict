@@ -1028,12 +1028,36 @@ export default function VehicleDetailPage() {
                   <div className="flex flex-col gap-2">
                     {/* Cerfa — toujours disponible */}
                     <CerfaPDFLink data={{
-                      vendeur: { nom: companyInfo.nom, adresse: companyInfo.adresse, ville: "" },
-                      acheteur: { nom: buyerName, adresse: buyerContact, ville: "" },
-                      vehicle: { marque: a.marque, modele: a.modele, immatriculation: a.immatriculation, vin, dateImmat: a.annee, km: kmVente ? parseInt(kmVente) : a.kilometrage },
+                      vendeur: {
+                        type: sellerStatus === "societe" ? "morale" : "physique",
+                        nom: companyInfo.nom,
+                        sexe: undefined,
+                        adresse: companyInfo.adresse,
+                        codePostal: "",
+                        commune: "",
+                        siret: companyInfo.siret,
+                      },
+                      acheteur: {
+                        type: "physique",
+                        nom: buyerName,
+                        adresse: buyerContact,
+                        codePostal: "",
+                        commune: "",
+                      },
+                      vehicle: {
+                        immatriculation: a.immatriculation,
+                        vin,
+                        dateImmat: a.annee,
+                        marque: a.marque,
+                        typeVariante: "",
+                        genre: "VP",
+                        denomination: a.modele,
+                        km: kmVente ? parseInt(kmVente) : a.kilometrage,
+                        certifImmat: true,
+                      },
                       dateVente: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
                       heureVente: "",
-                      prixVente: prixVenteReel ? parseFloat(prixVenteReel) : revente,
+                      ceder: "ceder",
                     }}>
                       Cerfa 15776 — Certificat de cession
                     </CerfaPDFLink>
