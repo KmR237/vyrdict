@@ -205,15 +205,19 @@ export function CerfaPDFLink({ data, children }: { data: CerfaData; children: Re
     setGenerating(true);
     try {
       const pdfBytes = await generateCerfaPDF(data);
-      const blob = new Blob([new Uint8Array(pdfBytes) as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Cerfa-15776-${data.vehicle.immatriculation || "cession"}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Créer un lien de téléchargement
+      const bytes = new Uint8Array(pdfBytes);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `Cerfa-15776-${data.vehicle.immatriculation || "cession"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(link.href);
     } catch (err) {
       console.error("Cerfa generation error:", err);
+      alert("Erreur lors de la génération du Cerfa. Vérifiez la console.");
     }
     setGenerating(false);
   }, [data, generating]);
