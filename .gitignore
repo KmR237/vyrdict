@@ -54,3 +54,4 @@ next-env.d.ts
 ct/
 test-results/
 *.pdf
+!public/cerfa-15776.pdf
