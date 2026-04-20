@@ -20,6 +20,7 @@ interface Settings {
   target_margin: number;
   company_info: CompanyInfo | null;
   invoice_counter: number;
+  seller_status: string;
 }
 
 const TVA_REGIMES = [
@@ -206,9 +207,31 @@ export default function ParametresPage() {
           </div>
         </section>
 
+        {/* Statut vendeur */}
+        <section className="bg-white rounded-lg border p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Statut vendeur</h2>
+          <div>
+            <select
+              defaultValue={settings.seller_status || "particulier"}
+              onChange={(e) => handleBlur("seller_status", e.target.value)}
+              className="block w-full border rounded px-3 py-2 text-sm"
+            >
+              <option value="particulier">Particulier</option>
+              <option value="societe">Société (avec SIRET)</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-1">
+              {(settings.seller_status || "particulier") === "particulier"
+                ? "Les documents de vente généreront un reçu simple (pas de facture)."
+                : "Les documents de vente généreront une facture pro avec TVA et mentions légales."}
+            </p>
+          </div>
+        </section>
+
         {/* Informations entreprise */}
         <section className="bg-white rounded-lg border p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Informations entreprise</h2>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+            {(settings.seller_status || "particulier") === "particulier" ? "Vos coordonnées" : "Informations entreprise"}
+          </h2>
 
           <div className="grid grid-cols-2 gap-4">
             {COMPANY_FIELDS.map((f) => (

@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest) {
 
   const allowed = [
     "tva_rate", "default_tva_regime", "stock_alert_days",
-    "target_margin", "company_info", "invoice_counter",
+    "target_margin", "company_info", "invoice_counter", "seller_status",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

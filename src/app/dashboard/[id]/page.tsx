@@ -13,6 +13,8 @@ import { AUCTION_SOURCES, calcMaxAdjudication, calcAuctionFees } from "@/lib/auc
 // PDF (lazy load — la lib est lourde)
 const VehiclePDFLink = dynamic(() => import("@/components/VehiclePDF").then(m => m.VehiclePDFLink), { ssr: false });
 const InvoicePDFLink = dynamic(() => import("@/components/InvoicePDF").then(m => m.InvoicePDFLink), { ssr: false });
+const CerfaPDFLink = dynamic(() => import("@/components/CerfaCessionPDF").then(m => m.CerfaPDFLink), { ssr: false });
+const RecuVentePDFLink = dynamic(() => import("@/components/RecuVentePDF").then(m => m.RecuVentePDFLink), { ssr: false });
 
 const STATUTS = [
   { key: "a_etudier", label: "À étudier", color: "bg-slate-100 text-slate-600" },
@@ -122,6 +124,8 @@ export default function VehicleDetailPage() {
   const [duplicating, setDuplicating] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<{ nom: string; adresse: string; siret: string; tva_intracom: string; telephone: string; email: string }>({ nom: "", adresse: "", siret: "", tva_intracom: "", telephone: "", email: "" });
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [sellerStatus, setSellerStatus] = useState("particulier");
+  const [kmVente, setKmVente] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showAllFields, setShowAllFields] = useState(false);
   const [showFinancier, setShowFinancier] = useState(true);
@@ -214,12 +218,14 @@ export default function VehicleDetailPage() {
         setNotesAcheteur(data.notes_acheteur || "");
         setPrixVenteReel(data.prix_vente_reel?.toString() || "");
         setInvoiceNumber(data.invoice_number || "");
+        setKmVente(data.km_vente?.toString() || "");
       }
-      // Charger les infos société
+      // Charger les infos société + statut vendeur
       const settingsRes = await fetch("/api/settings");
       if (settingsRes.ok) {
         const s = await settingsRes.json();
         if (s.company_info) setCompanyInfo(s.company_info);
+        if (s.seller_status) setSellerStatus(s.seller_status);
       }
       setLoading(false);
     })();
@@ -963,44 +969,121 @@ export default function VehicleDetailPage() {
               </div>
             )}
 
-            {/* ── Facture de vente ── */}
+            {/* ── Documents de vente ── */}
             {(statut === "en_vente" || isVendu) && !usagePerso && (
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-                <h3 className="font-bold text-sm mb-3">Facture de vente</h3>
-                {invoiceNumber ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-xs text-muted">N° <span className="font-mono font-bold">{invoiceNumber}</span></p>
-                    <InvoicePDFLink data={{
-                      invoiceNumber,
-                      date: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
-                      company: companyInfo,
-                      vehicle: { marque: a.marque, modele: a.modele, annee: a.annee, vin, immatriculation: a.immatriculation, kilometrage: a.kilometrage },
-                      seller: { name: companyInfo.nom, contact: "" },
-                      buyer: { name: buyerName, contact: buyerContact },
-                      prixVenteTTC: prixVenteReel ? parseFloat(prixVenteReel) : revente,
-                      coutRevient: achat + coutReparations + frais,
-                      tvaRegime,
-                      tvaRate: 0.2,
-                    }}>
-                      Télécharger la facture PDF
-                    </InvoicePDFLink>
+              <details open className="bg-white rounded-2xl border border-slate-200/60 shadow-sm group">
+                <summary className="p-4 text-sm font-bold cursor-pointer flex items-center justify-between">
+                  Documents de vente
+                  <svg className="w-4 h-4 text-slate-300 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div className="px-4 pb-4 flex flex-col gap-4">
+                  {/* Km à la vente */}
+                  <div>
+                    <label className="text-xs text-muted">Kilométrage à la vente</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <input type="number" inputMode="numeric" value={kmVente}
+                        onChange={(e) => { setKmVente(e.target.value); saveDebounced({ km_vente: e.target.value ? parseInt(e.target.value) : null }); }}
+                        onBlur={() => save({ km_vente: kmVente ? parseInt(kmVente) : null })}
+                        placeholder={a.kilometrage > 0 ? a.kilometrage.toString() : "126 000"}
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm tabular-nums focus:border-primary focus:outline-none" />
+                      <span className="text-xs text-muted">km</span>
+                    </div>
                   </div>
-                ) : (
-                  <button onClick={async () => {
-                    const res = await fetch(`/api/dashboard/${id}/invoice`, { method: "POST" });
-                    if (res.ok) {
-                      const data = await res.json();
-                      setInvoiceNumber(data.invoice_number);
-                      toast.show(`Facture ${data.invoice_number} créée`);
-                    }
-                  }} className="w-full px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-all cursor-pointer">
-                    Générer la facture
-                  </button>
-                )}
-                {!companyInfo.nom && (
-                  <p className="text-[10px] text-amber-600 mt-2">Renseignez vos infos société dans les <a href="/dashboard/parametres" className="underline">Paramètres</a> pour une facture complète.</p>
-                )}
-              </div>
+
+                  {/* Aperçu reçu / facture */}
+                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 text-[10px]">
+                    {sellerStatus === "particulier" ? (
+                      <div>
+                        <p className="text-center font-bold text-xs uppercase tracking-wide mb-3">Reçu de vente</p>
+                        <p className="leading-relaxed">
+                          Je soussigné <strong>{companyInfo.nom || "________________"}</strong>,
+                          {companyInfo.adresse && ` demeurant ${companyInfo.adresse},`} déclare avoir vendu le véhicule{" "}
+                          <strong>{a.marque} {a.modele}</strong> ({a.annee}), immatriculé <strong>{a.immatriculation}</strong>
+                          {vin && <>, VIN <span className="font-mono">{vin}</span></>}
+                          , kilométrage <strong>{kmVente ? `${parseInt(kmVente).toLocaleString("fr-FR")} km` : `${a.kilometrage.toLocaleString("fr-FR")} km`}</strong>,
+                          à <strong>{buyerName || "________________"}</strong>,
+                          pour le prix de <strong>{(prixVenteReel ? parseFloat(prixVenteReel) : revente).toLocaleString("fr-FR")} €</strong>.
+                        </p>
+                        <p className="text-slate-400 mt-3">Fait le {dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : "JJ/MM/AAAA"}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <div>
+                            <p className="font-bold text-[11px]" style={{ color: "#0d9488" }}>{companyInfo.nom || "Société"}</p>
+                            {companyInfo.siret && <p className="text-slate-400">SIRET : {companyInfo.siret}</p>}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-xs">FACTURE</p>
+                            <p className="text-slate-400">N° {invoiceNumber || "FAC-2026-..."}</p>
+                          </div>
+                        </div>
+                        <p className="text-slate-500">Acheteur : <strong>{buyerName || "—"}</strong></p>
+                        <p className="text-slate-500">{a.marque} {a.modele} — {a.immatriculation} — <strong>{(prixVenteReel ? parseFloat(prixVenteReel) : revente).toLocaleString("fr-FR")} €</strong></p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Boutons téléchargement */}
+                  <div className="flex flex-col gap-2">
+                    {/* Cerfa — toujours disponible */}
+                    <CerfaPDFLink data={{
+                      vendeur: { nom: companyInfo.nom, adresse: companyInfo.adresse, ville: "" },
+                      acheteur: { nom: buyerName, adresse: buyerContact, ville: "" },
+                      vehicle: { marque: a.marque, modele: a.modele, immatriculation: a.immatriculation, vin, dateImmat: a.annee, km: kmVente ? parseInt(kmVente) : a.kilometrage },
+                      dateVente: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
+                      heureVente: "",
+                      prixVente: prixVenteReel ? parseFloat(prixVenteReel) : revente,
+                    }}>
+                      Cerfa 15776 — Certificat de cession
+                    </CerfaPDFLink>
+
+                    {/* Reçu (particulier) ou Facture (société) */}
+                    {sellerStatus === "particulier" ? (
+                      <RecuVentePDFLink data={{
+                        vendeur: { nom: companyInfo.nom, adresse: companyInfo.adresse },
+                        acheteur: { nom: buyerName, adresse: buyerContact },
+                        vehicle: { marque: a.marque, modele: a.modele, immatriculation: a.immatriculation, vin, km: kmVente ? parseInt(kmVente) : a.kilometrage, annee: a.annee },
+                        dateVente: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
+                        prixVente: prixVenteReel ? parseFloat(prixVenteReel) : revente,
+                        modePaiement: "comptant",
+                      }}>
+                        Reçu de vente
+                      </RecuVentePDFLink>
+                    ) : invoiceNumber ? (
+                      <InvoicePDFLink data={{
+                        invoiceNumber,
+                        date: dateVente ? new Date(dateVente).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR"),
+                        company: companyInfo,
+                        vehicle: { marque: a.marque, modele: a.modele, annee: a.annee, vin, immatriculation: a.immatriculation, kilometrage: kmVente ? parseInt(kmVente) : a.kilometrage },
+                        seller: { name: companyInfo.nom, contact: "" },
+                        buyer: { name: buyerName, contact: buyerContact },
+                        prixVenteTTC: prixVenteReel ? parseFloat(prixVenteReel) : revente,
+                        coutRevient: achat + coutReparations + frais,
+                        tvaRegime,
+                        tvaRate: 0.2,
+                      }}>
+                        Facture {invoiceNumber}
+                      </InvoicePDFLink>
+                    ) : (
+                      <button onClick={async () => {
+                        const res = await fetch(`/api/dashboard/${id}/invoice`, { method: "POST" });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setInvoiceNumber(data.invoice_number);
+                          toast.show(`Facture ${data.invoice_number} créée`);
+                        }
+                      }} className="w-full px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-all cursor-pointer">
+                        Générer la facture
+                      </button>
+                    )}
+                  </div>
+
+                  {!companyInfo.nom && (
+                    <p className="text-[10px] text-amber-600">Renseignez vos infos dans les <a href="/dashboard/parametres" className="underline">Paramètres</a> pour des documents complets.</p>
+                  )}
+                </div>
+              </details>
             )}
 
             {/* ── Statut pipeline ── */}

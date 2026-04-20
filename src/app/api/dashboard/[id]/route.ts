@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     "cote_marche", "source_cote", "date_cote", "usage_perso",
     "reparations_faites", "timeline",
     "notes_defaillances", "date_vente", "notes_acheteur", "documents",
-    "vin", "seller_name", "seller_contact", "buyer_name", "buyer_contact", "invoice_number", "tva_regime",
+    "vin", "seller_name", "seller_contact", "buyer_name", "buyer_contact", "invoice_number", "tva_regime", "km_vente",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
